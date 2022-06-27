@@ -1,0 +1,44 @@
+MMD Animation Section
+    Pointer Table (4 bytes offset from the section start)
+    <Animation>
+        uint16_t -> frameCount + hasScale (MSB 1 -> hasScale)
+        <for each Node, except Root>
+            Scale (3x fixed point 16-bit | optional, only when hasScale is set)
+            Location (3x int16_t)
+            Rotation (3x fixed point 16-bit)
+        <instructions>
+            read in words, with 4-bit opcode
+                opcode 0x0 - keyframe | <4-bit opcode> <12-bit time code>
+                    frame data | quasi opcode 8
+                        1-bit always set
+                        3-bit enabled scale axis
+                        3-bit enabled rotation axis
+                        3-bit enabled translation axis
+                        6-bit affected node
+                        16-bit scale value
+                        <for each enabled axis>
+                            16-bit momentum value, gets divided by scale
+                opcode 0x1 - loop start | <4-bit opcode> <4-bit empty> <8-bit loopCount>
+                    sets loop count
+                    sets loop start
+                opcode 0x2 - loop end | <4-bit opcode> <12-bit time code> <16-bit frameValue>
+                    reduces loop count by 1, except for endless loops
+                    if loop count == 0
+                        jumps after the loop
+                    else
+                        jumps to loop start, sets frame counter to frameValue
+                opcode 0x3 - change texture | <4-bit opcode> <12-bit time code>
+                    uint8_t srcY
+                    uint8_t srcX
+                    uint8_t height
+                    uint8_t width
+                    uint8_t destY
+                    uint8_t destX
+                opcode 0x4 - play sound | <4-bit opcode> <12-bit time code> <8-bit soundId> <8-bit vabId>
+                    plays a sound
+                    
+
+
+
+
+
