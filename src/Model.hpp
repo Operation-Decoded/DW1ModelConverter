@@ -81,7 +81,7 @@ struct SVector
 
     FVector convertToFixedPoint(uint32_t decimalBits)
     {
-        float scale = -1.0f / (1 << decimalBits);
+        float scale = 1.0f / (1 << decimalBits);
         return { x * scale, y * scale, z * scale };
     }
 

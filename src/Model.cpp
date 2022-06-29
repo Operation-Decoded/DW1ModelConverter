@@ -77,13 +77,13 @@ std::vector<Face> Primitive::toFaces()
 {
     std::vector<Face> faces;
 
-    faces.push_back(getFace(0, 1, 2));
-    if (flag.isDoubleFaced) faces.push_back(getFace(2, 1, 0));
+    faces.push_back(getFace(2, 1, 0));
+    if (flag.isDoubleFaced) faces.push_back(getFace(0, 1, 2));
 
     if (mode.isQuad)
     {
-        faces.push_back(getFace(3, 2, 1));
-        if (flag.isDoubleFaced) faces.push_back(getFace(1, 2, 3));
+        faces.push_back(getFace(1, 2, 3));
+        if (flag.isDoubleFaced) faces.push_back(getFace(3, 2, 1));
     }
 
     return faces;

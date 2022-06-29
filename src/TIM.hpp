@@ -9,12 +9,31 @@
 #include <utility>
 #include <vector>
 
+struct RGBA
+{
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t a;
+};
+
 struct TIMColor
 {
     uint16_t r   : 5;
     uint16_t g   : 5;
     uint16_t b   : 5;
     uint16_t stp : 1;
+
+    const RGBA getColor()
+    {
+        if (r == 0 && g == 0 && b == 0 && stp == 0) return { 0, 0, 0, 0 }; // transparent
+        if (r == 0 && g == 0 && b == 0 && stp == 1) return { 0, 0, 0, 255 }; // black
+
+        return { static_cast<uint8_t>(r << 3),
+                 static_cast<uint8_t>(g << 3),
+                 static_cast<uint8_t>(b << 3),
+                 static_cast<uint8_t>(0xFF - stp * 0x80) };
+    }
 };
 
 struct CLUT4BPP

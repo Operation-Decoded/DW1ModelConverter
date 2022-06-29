@@ -17,7 +17,7 @@ int main()
     exporter.getDocument().SaveFile("BOYS.dae");
     CLUTMap clutMap(model);
 
-    tim.writeImage(clutMap, "BOYS.bmp");
+    tim.writeImage(clutMap, "BOYS.png");
 
     // TODO support transparency channel for textures
     // TODO support for texture+color primitives

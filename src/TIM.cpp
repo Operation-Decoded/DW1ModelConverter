@@ -9,7 +9,7 @@ static uint32_t toTexturePage(uint32_t x, uint32_t y) { return (x / 64) + ((y / 
 
 void AbstractTIM::writeImage(CLUTMap& clutMap, std::filesystem::path path)
 {
-    cimg::CImg<uint8_t> new_image(width, height, 1, 3, 0);
+    cimg::CImg<uint8_t> new_image(width, height, 1, 4, 0);
     auto& clut = clutMap[toTexturePage(pixelOrgX, pixelOrgY)];
 
     for (uint32_t y = 0; y < height; y++)
@@ -23,13 +23,11 @@ void AbstractTIM::writeImage(CLUTMap& clutMap, std::filesystem::path path)
             uint32_t palette = clutCoord.coords.y - clutOrgY;
 
             TIMColor color      = palettes[palette][pixels[(y * static_cast<uint64_t>(width)) + x]];
-            const uint8_t bla[] = { static_cast<uint8_t>(color.r * 8),
-                                    static_cast<uint8_t>(color.g * 8),
-                                    static_cast<uint8_t>(color.b * 8) };
-            new_image.draw_point(x, y, bla, 1.0f);
+            RGBA rgba = color.getColor();
+            new_image.draw_point(x, y, reinterpret_cast<uint8_t*>(&rgba), 1.0f);
         }
 
-    new_image.save_bmp(path.string().c_str());
+    new_image.save_png(path.string().c_str());
 }
 
 AbstractTIM::AbstractTIM(const std::filesystem::path path)
