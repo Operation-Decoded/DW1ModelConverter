@@ -25,9 +25,8 @@ public:
 
     std::map<uint32_t, CLUTMapImage> texturePages;
 
-    CLUTMap(Model& model);
-
     CLUTMapImage& at(uint32_t id);
     CLUTMapImage& operator[](uint32_t id);
     void updateBlocks();
+    void applyModel(Model& model);
 };

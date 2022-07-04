@@ -38,7 +38,7 @@ void CLUTMap::updateBlocks()
             }
 }
 
-CLUTMap::CLUTMap(Model& model)
+void CLUTMap::applyModel(Model& model)
 {
     auto texturePage = model.getTexturePage();
     auto clutX       = model.getClutX();

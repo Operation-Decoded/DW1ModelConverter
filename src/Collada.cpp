@@ -205,7 +205,7 @@ void ColladaExporter::setupXML()
     document.InsertEndChild(document.NewDeclaration());
     root = document.NewElement("COLLADA");
     root->SetAttribute("xmlns", "http://www.collada.org/2008/03/COLLADASchema");
-    root->SetAttribute("version", "1.5.0");
+    root->SetAttribute("version", "1.4.1");
     document.InsertEndChild(root);
 }
 
@@ -237,12 +237,14 @@ void ColladaExporter::addColorFaces(tinyxml2::XMLElement* node, Mesh& mesh, std:
     }
 
     if (colors.empty()) return;
+    color = colors[0]; // used for material, only one color allowed
 
     buildSource(node, colors, id + "-color");
 
     // triangles element
     auto triNode = node->InsertNewChildElement("triangles");
     triNode->SetAttribute("count", colors.size() / 3);
+    triNode->SetAttribute("material", "material-fixedColor");
 
     buildInputShared(triNode, 0, "VERTEX", ("#" + id + "-vertices"));
     buildInputShared(triNode, 1, "NORMAL", ("#" + id + "-normal"));
@@ -276,10 +278,44 @@ void ColladaExporter::addTextureFaces(tinyxml2::XMLElement* node, Mesh& mesh, st
     // triangles element
     auto triNode = node->InsertNewChildElement("triangles");
     triNode->SetAttribute("count", uvs.size() / 3);
+    triNode->SetAttribute("material", "material-textured");
 
     buildInputShared(triNode, 0, "VERTEX", ("#" + id + "-vertices"));
     buildInputShared(triNode, 1, "NORMAL", ("#" + id + "-normal"));
     buildInputShared(triNode, 2, "TEXCOORD", ("#" + id + "-texcoord"));
+
+    triNode->InsertNewChildElement("p")->SetText(p.str().c_str());
+}
+
+void ColladaExporter::addNoLightFaces(tinyxml2::XMLElement* node, Mesh& mesh, std::string id)
+{
+    std::vector<TexCoord> uvs;
+    std::stringstream p;
+
+    for (Face& face : mesh.faces)
+    {
+        if (face.material_type != MaterialType::NO_LIGHT) continue;
+
+        p << face.v1 << " " << uvs.size() + 0 << " ";
+        p << face.v2 << " " << uvs.size() + 1 << " ";
+        p << face.v3 << " " << uvs.size() + 2 << " ";
+
+        uvs.push_back(TexCoord(face.uv1, tim.getSize()));
+        uvs.push_back(TexCoord(face.uv2, tim.getSize()));
+        uvs.push_back(TexCoord(face.uv3, tim.getSize()));
+    }
+
+    if (uvs.empty()) return;
+
+    buildSource(node, uvs, id + "-texcoord");
+
+    // triangles element
+    auto triNode = node->InsertNewChildElement("triangles");
+    triNode->SetAttribute("count", uvs.size() / 3);
+    triNode->SetAttribute("material", "material-rawTextured");
+
+    buildInputShared(triNode, 0, "VERTEX", ("#" + id + "-vertices"));
+    buildInputShared(triNode, 1, "TEXCOORD", ("#" + id + "-texcoord"));
 
     triNode->InsertNewChildElement("p")->SetText(p.str().c_str());
 }
@@ -307,7 +343,7 @@ void ColladaExporter::buildGeometry()
         // faces
         addColorFaces(meshNode, mesh, id);
         addTextureFaces(meshNode, mesh, id);
-        // addNoLightFaces(meshNode, mesh, id); // TODO
+        addNoLightFaces(meshNode, mesh, id);
     }
 }
 
@@ -418,8 +454,9 @@ void ColladaExporter::buildScene()
     scene->SetAttribute("id", "scene");
     scene->SetAttribute("name", "scene");
 
-    rootNode->SetAttribute("id", model.name.string().c_str());
-    rootNode->SetAttribute("name", model.name.string().c_str());
+
+    rootNode->SetAttribute("id", model.name.c_str());
+    rootNode->SetAttribute("name", model.name.c_str());
 
     // mesh nodes
     auto meshNode = rootNode->InsertNewChildElement("node");
@@ -427,11 +464,34 @@ void ColladaExporter::buildScene()
 
     for (uint32_t i = 0; i < model.meshes.size(); i++)
     {
-        auto subNode  = meshNode->InsertNewChildElement("node"); // TODO name
-        auto instance = subNode->InsertNewChildElement("instance_controller");
+        auto subNode = meshNode->InsertNewChildElement("node");
+        subNode->SetAttribute("id", ("object-" + std::to_string(i)).c_str());
+        subNode->SetAttribute("name", ("object-" + std::to_string(i)).c_str());
 
+        auto instance = subNode->InsertNewChildElement("instance_controller");
         instance->SetAttribute("url", ("#object-" + std::to_string(i) + "-skin").c_str());
         instance->InsertNewChildElement("skeleton")->SetText("#node-0");
+
+        auto bindMaterial = instance->InsertNewChildElement("bind_material");
+        auto tech = bindMaterial->InsertNewChildElement("technique_common");
+
+        auto instanceTextured = tech->InsertNewChildElement("instance_material");
+        instanceTextured->SetAttribute("symbol", "material-textured");
+        instanceTextured->SetAttribute("target", "#mat-textured");
+        auto uvInputTextured = instanceTextured->InsertNewChildElement("bind_vertex_input");
+        uvInputTextured->SetAttribute("semantic", "UVSET0");
+        uvInputTextured->SetAttribute("input_semantic", "TEXCOORD");
+
+        auto instanceRawTextured = tech->InsertNewChildElement("instance_material");
+        instanceRawTextured->SetAttribute("symbol", "material-rawTextured");
+        instanceRawTextured->SetAttribute("target", "#mat-rawTextured");
+        auto uvInputRawTextured = instanceRawTextured->InsertNewChildElement("bind_vertex_input");
+        uvInputRawTextured->SetAttribute("semantic", "UVSET0");
+        uvInputRawTextured->SetAttribute("input_semantic", "TEXCOORD");
+
+        auto instanceFixedColor = tech->InsertNewChildElement("instance_material");
+        instanceFixedColor->SetAttribute("symbol", "material-fixedColor");
+        instanceFixedColor->SetAttribute("target", "#mat-fixedColor");
     }
 
     // joint nodes
@@ -440,9 +500,10 @@ void ColladaExporter::buildScene()
 
     std::vector<tinyxml2::XMLElement*> xmlNodes;
 
-    for (uint32_t i = 0; i < model.skeleton.size(); i++)
+    for (uint32_t i = 0; i < model.skeleton.size() || i == 0; i++)
     {
-        auto& entry = model.skeleton[i];
+        NodeEntry entry{ 0xFF, 0xFF };
+        if (model.skeleton.size() != 0) entry = model.skeleton[i];
         auto parent = entry.parent == 0xFF ? jointsNode : xmlNodes[entry.parent];
 
         auto node = parent->InsertNewChildElement("node");
@@ -534,16 +595,126 @@ void ColladaExporter::buildAnimations()
     }
 }
 
+void ColladaExporter::buildImages()
+{
+    auto libImages = root->InsertNewChildElement("library_images");
+
+    auto image = libImages->InsertNewChildElement("image");
+    image->SetAttribute("id", "texture");
+    image->SetAttribute("name", "texture");
+    auto initFrom = image->InsertNewChildElement("init_from");
+
+    initFrom->SetText(model.texture->string().c_str());
+}
+
+void ColladaExporter::buildEffect1(tinyxml2::XMLElement* libEffects)
+{
+    auto effect = libEffects->InsertNewChildElement("effect");
+    effect->SetAttribute("id", "fx-textured");
+    auto profile  = effect->InsertNewChildElement("profile_COMMON");
+
+    auto texParam = profile->InsertNewChildElement("newparam");
+    texParam->SetAttribute("sid", "tex");
+    auto surface = texParam->InsertNewChildElement("surface");
+    surface->SetAttribute("type", "2D");
+    surface->InsertNewChildElement("init_from")->SetText("texture");
+    
+    auto samplerParam = profile->InsertNewChildElement("newparam");
+    samplerParam->SetAttribute("sid", "texture-sampler");
+    auto sampler = samplerParam->InsertNewChildElement("sampler2D");
+    sampler->InsertNewChildElement("source")->SetText("tex");
+
+    auto technique = profile->InsertNewChildElement("technique");
+    technique->SetAttribute("sid", "COMMON");
+
+    auto shader         = technique->InsertNewChildElement("lambert");
+    auto diffuse        = shader->InsertNewChildElement("diffuse");
+    auto diffuseTexture = diffuse->InsertNewChildElement("texture");
+    diffuseTexture->SetAttribute("texcoord", "UVSET0");
+    diffuseTexture->SetAttribute("texture", "texture-sampler");
+}
+
+void ColladaExporter::buildEffect2(tinyxml2::XMLElement* libEffects)
+{
+    auto effect = libEffects->InsertNewChildElement("effect");
+    effect->SetAttribute("id", "fx-rawTextured");
+    auto profile  = effect->InsertNewChildElement("profile_COMMON");
+
+    auto texParam = profile->InsertNewChildElement("newparam");
+    texParam->SetAttribute("sid", "tex");
+    auto surface = texParam->InsertNewChildElement("surface");
+    surface->SetAttribute("type", "2D");
+    surface->InsertNewChildElement("init_from")->SetText("texture");
+    
+    auto samplerParam = profile->InsertNewChildElement("newparam");
+    samplerParam->SetAttribute("sid", "texture-sampler");
+    auto sampler = samplerParam->InsertNewChildElement("sampler2D");
+    sampler->InsertNewChildElement("source")->SetText("tex");
+
+    auto technique = profile->InsertNewChildElement("technique");
+    technique->SetAttribute("sid", "COMMON");
+
+    auto shader         = technique->InsertNewChildElement("lambert");
+    auto diffuse        = shader->InsertNewChildElement("diffuse");
+    auto diffuseTexture = diffuse->InsertNewChildElement("texture");
+    diffuseTexture->SetAttribute("texcoord", "UVSET0");
+    diffuseTexture->SetAttribute("texture", "texture-sampler");
+}
+
+void ColladaExporter::buildEffect3(tinyxml2::XMLElement* libEffects)
+{
+    auto effect = libEffects->InsertNewChildElement("effect");
+    effect->SetAttribute("id", "fx-fixedColor");
+    auto profile   = effect->InsertNewChildElement("profile_COMMON");
+    auto technique = profile->InsertNewChildElement("technique");
+    technique->SetAttribute("sid", "COMMON");
+
+    auto shader  = technique->InsertNewChildElement("lambert");
+    auto diffuse = shader->InsertNewChildElement("diffuse");
+    diffuse->InsertNewChildElement("color")->SetText(
+        (std::to_string(color.r / 255.0f) + " " + std::to_string(color.g / 255.0f) + " " + std::to_string(color.b / 255.0f) + " 1").c_str());
+}
+
+void ColladaExporter::buildEffects()
+{
+    auto libEffects = root->InsertNewChildElement("library_effects");
+    buildEffect1(libEffects);
+    buildEffect2(libEffects);
+    buildEffect3(libEffects);
+}
+
+void ColladaExporter::buildMaterials() { 
+    auto libMaterials = root->InsertNewChildElement("library_materials");
+
+    auto matTexture = libMaterials->InsertNewChildElement("material");
+    matTexture->SetAttribute("id", "mat-textured");
+    matTexture->SetAttribute("name", "mat-textured");
+    matTexture->InsertNewChildElement("instance_effect")->SetAttribute("url", "#fx-textured");
+
+    
+    auto matRawTexture = libMaterials->InsertNewChildElement("material");
+    matRawTexture->SetAttribute("id", "mat-rawTextured");
+    matRawTexture->SetAttribute("name", "mat-rawTextured");
+    matRawTexture->InsertNewChildElement("instance_effect")->SetAttribute("url", "#fx-rawTextured");
+
+    
+    auto matFixedColor = libMaterials->InsertNewChildElement("material");
+    matFixedColor->SetAttribute("id", "mat-fixedColor");
+    matFixedColor->SetAttribute("name", "mat-fixedColor");
+    matFixedColor->InsertNewChildElement("instance_effect")->SetAttribute("url", "#fx-fixedColor");
+}
+
 void ColladaExporter::buildXML()
 {
     buildAssetNode();
-    // library_texture
-    // library_material
-    // library_effects
 
     buildGeometry();
     buildControllers();
     buildAnimations();
+
+    buildImages();
+    buildEffects();
+    buildMaterials();
 
     buildScene();
 }

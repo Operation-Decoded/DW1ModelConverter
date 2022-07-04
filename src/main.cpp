@@ -12,15 +12,16 @@ int main()
     std::filesystem::path meshPath    = "..\\..\\..\\..\\assets\\original\\CHDAT\\MMD0\\BOYS.MMD";
 
     AbstractTIM tim(texturePath);
-    Model model(meshPath, nodePath, texturePath);
+    Model model(meshPath, nodePath, "BOYS.PNG");
     ColladaExporter exporter(model, tim);
     exporter.getDocument().SaveFile("BOYS.dae");
-    CLUTMap clutMap(model);
+    CLUTMap clutMap;
+    clutMap.applyModel(model);
 
-    tim.writeImage(clutMap, "BOYS.png");
-
-    // TODO support transparency channel for textures
-    // TODO support for texture+color primitives
+    tim.writeImage(clutMap, "BOYS.PNG");
+    
+    // TODO support for multiple images (that one arena)
+    // TODO support for images being used by multiple models
     // TODO support for semi-transparent primitives
 
     std::cout << "Done" << std::endl;

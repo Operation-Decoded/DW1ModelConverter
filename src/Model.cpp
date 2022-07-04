@@ -245,6 +245,7 @@ Model::Model(filepath mesh, std::optional<filepath> nodes, std::optional<filepat
     : texture(texture)
 {
     std::streamoff length = std::filesystem::file_size(mesh);
+    name                  = mesh.filename().string();
 
     if (nodes) loadNodes(nodes.value()); // load nodes before mesh, since animations need to know about the bone count
     loadMesh(mesh);
@@ -273,11 +274,13 @@ void Model::loadMesh(filepath path)
     }
 
     loadTMD(*tmdPtr);
-    if (mtnPtr != NULL)
+    if (mtnPtr != NULL && skeleton.size() != 0)
     {
         ReadBuffer b(mtnPtr);
         anims = std::make_unique<MMDAnimations>(b, skeleton.size());
     }
+    else
+        anims = std::make_unique<MMDAnimations>();
 }
 
 uint32_t Model::getTexturePage() const

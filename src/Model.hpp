@@ -262,7 +262,7 @@ private:
     void loadNodes(filepath path);
 
 public:
-    std::filesystem::path name;
+    std::string name;
     std::vector<Mesh> meshes;
     std::unique_ptr<MMDAnimations> anims;
     std::vector<NodeEntry> skeleton;
@@ -276,7 +276,7 @@ public:
 
     // Model(std::filesystem::path name, std::vector<Mesh> meshes, std::unique_ptr<MMDAnimations> anims) : name(name),
     // meshes(meshes), anims(std::move(anims)) {}
-    Model(filepath mesh, std::optional<filepath> nodes, std::optional<filepath> texture);
+    Model(filepath mesh, std::optional<filepath> nodes = {}, std::optional<filepath> texture = {});
 };
 
 /*
@@ -341,4 +341,19 @@ ETCHI/MAHI.TMD      ->
 ETCNA/ABOX.TMD      -> OMOC08 MAP Image 2
 ETCNA/BIGBOX.TMD    -> OMOC08 MAP Image 2
 
+BTL_REL.BIN@0x0D20  -> 
+VS_REL.BIN@0x0D20   -> 
+STD_REL.BIN@0x0D20  -> 
+
+BTL_REL.BIN@0x1D58  ->
+VS_REL.BIN@0x1D58   ->
+STD_REL.BIN@0x1D58  ->
+
+BTL_REL.BIN@0x2220  ->
+VS_REL.BIN@0x2220   ->
+STD_REL.BIN@0x2220  ->
+
+BTL_REL.BIN@0x2848  ->
+VS_REL.BIN@0x2848   ->
+STD_REL.BIN@0x2848  ->
 */
