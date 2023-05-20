@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include <filesystem>
+#include <optional>
 #include <vector>
 
 struct TMDObject
@@ -33,7 +34,7 @@ struct MMD
     TMD tmd;
 };
 
-const enum class TMDCode : uint8_t
+enum class TMDCode : uint8_t
 {
     UNKNOWN = 0,
     POLYGON = 1,
@@ -195,6 +196,7 @@ struct Face
     // flags
     bool isGradated;
     bool lightSourceDisabled;
+    bool isDoubleSided;
 
     // mode
     bool shadingMode; // true -> gouraud, false -> flag
@@ -341,9 +343,9 @@ ETCHI/MAHI.TMD      ->
 ETCNA/ABOX.TMD      -> OMOC08 MAP Image 2
 ETCNA/BIGBOX.TMD    -> OMOC08 MAP Image 2
 
-BTL_REL.BIN@0x0D20  -> 
-VS_REL.BIN@0x0D20   -> 
-STD_REL.BIN@0x0D20  -> 
+BTL_REL.BIN@0x0D20  ->
+VS_REL.BIN@0x0D20   ->
+STD_REL.BIN@0x0D20  ->
 
 BTL_REL.BIN@0x1D58  ->
 VS_REL.BIN@0x1D58   ->

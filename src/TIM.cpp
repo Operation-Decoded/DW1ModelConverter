@@ -18,16 +18,43 @@ void AbstractTIM::writeImage(CLUTMap& clutMap, std::filesystem::path path)
             ClutCoordsUnion clutCoord = { .u32 = clut(x, y) };
 
             if (clutCoord.u32 == 0xFFFFFFFF) continue; // no CLUT found
-            if (clutCoord.coords.x != clutOrgX) throw std::exception("Misalinged CLUT");
+            if (clutCoord.coords.x != clutOrgX) throw std::runtime_error("Misalinged CLUT");
 
             uint32_t palette = clutCoord.coords.y - clutOrgY;
 
-            TIMColor color      = palettes[palette][pixels[(y * static_cast<uint64_t>(width)) + x]];
-            RGBA rgba = color.getColor();
+            TIMColor color = palettes[palette][pixels[(y * static_cast<uint64_t>(width)) + x]];
+            RGBA rgba      = color.getColor();
             new_image.draw_point(x, y, reinterpret_cast<uint8_t*>(&rgba), 1.0f);
         }
 
     new_image.save_png(path.string().c_str());
+}
+
+std::vector<uint8_t> AbstractTIM::getImage(CLUTMap& clutMap)
+{
+    std::vector<uint8_t> data;
+    data.resize(width * height * 4);
+    auto& clut = clutMap[toTexturePage(pixelOrgX, pixelOrgY)];
+
+    for (uint32_t y = 0; y < height; y++)
+        for (uint32_t x = 0; x < width; x++)
+        {
+            ClutCoordsUnion clutCoord = { .u32 = clut(x, y) };
+
+            if (clutCoord.u32 == 0xFFFFFFFF) continue; // no CLUT found
+            if (clutCoord.coords.x != clutOrgX) throw std::runtime_error("Misalinged CLUT");
+
+            uint32_t palette = clutCoord.coords.y - clutOrgY;
+
+            TIMColor color                  = palettes[palette][pixels[(y * static_cast<uint64_t>(width)) + x]];
+            RGBA rgba                       = color.getColor();
+            data[((y * width) + x) * 4 + 0] = rgba.r;
+            data[((y * width) + x) * 4 + 1] = rgba.g;
+            data[((y * width) + x) * 4 + 2] = rgba.b;
+            data[((y * width) + x) * 4 + 3] = rgba.a;
+        }
+
+    return data;
 }
 
 AbstractTIM::AbstractTIM(const std::filesystem::path path)

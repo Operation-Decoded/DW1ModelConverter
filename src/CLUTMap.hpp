@@ -2,6 +2,7 @@
 
 #include "CImg/CImg.h"
 
+#include <cstdint>
 #include <map>
 
 class Model;

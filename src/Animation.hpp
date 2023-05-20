@@ -43,6 +43,7 @@ enum class Axis
 class Instruction
 {
 public:
+    virtual ~Instruction()                      = default;
     Instruction()                               = default;
     Instruction(const Instruction&)             = delete; // can't copy
     Instruction& operator=(const Instruction&&) = delete; // can't copy
@@ -147,6 +148,7 @@ typedef std::map<Axis, std::pair<uint32_t, float>> MomentumData;
 
 class Animation
 {
+private:
     std::vector<AnimNodeData> nodeData;
     std::vector<MomentumData> momentumData;
 
@@ -158,6 +160,7 @@ class Animation
     uint32_t loopCount     = 0;
 
     void setMomentum(const Axis axis, uint32_t node, float value);
+    void updateData(const Axis axis, uint32_t node);
 
     friend Instruction;
     friend KeyframeInstruction;
@@ -165,6 +168,10 @@ class Animation
     friend LoopEndInstruction;
     friend PlaySoundInstruction;
     friend TextureInstruction;
+
+public:
+    // start of endless looping, as time code
+    float endlessStart = -1;
 
 public:
     Animation(const MMDAnimation& anim);

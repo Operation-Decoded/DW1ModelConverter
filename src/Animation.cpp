@@ -63,15 +63,35 @@ void Animation::setMomentum(const Axis axis, uint32_t node, float value)
     auto oldMomentum         = momentumData[node][axis];
     momentumData[node][axis] = { keyFrame, value };
 
+    /* To be used when per-axis keyframe data is possible. E.g. with COLLADA, but not glTF
     auto oldPos     = nodeData[node].data[axis].back();
     auto frameCount = keyFrame - oldMomentum.first;
+    auto timeCode   = (keyFrame - 1) / 20.0f;
 
-    nodeData[node].data[axis].push_back({ (keyFrame - 1) / 20.0f, oldPos.second + (oldMomentum.second * frameCount) });
+    nodeData[node].data[axis].push_back({ timeCode, oldPos.second + (oldMomentum.second * frameCount) });
+    */
+}
+
+void Animation::updateData(const Axis axis, uint32_t node)
+{
+    auto oldMomentum               = momentumData[node][axis];
+    momentumData[node][axis].first = keyFrame;
+
+    auto oldPos     = nodeData[node].data[axis].back();
+    auto frameCount = keyFrame - oldMomentum.first;
+    auto timeCode   = (keyFrame - 1) / 20.0f;
+
+    nodeData[node].data[axis].push_back({ timeCode, oldPos.second + (oldMomentum.second * frameCount) });
 }
 
 bool KeyframeInstruction::run(Animation& anim)
 {
     if (anim.mtnFrame != timecode) return false;
+
+    // update all axis for this keyframe, necessary when per-axis data is not allowed, as in glTF
+    for (uint32_t node = 0; node < anim.momentumData.size(); node++)
+        for (int axis = 0; axis < 9; axis++)
+            anim.updateData((Axis)axis, node);
 
     for (auto entry : entries)
         for (auto value : entry.values)
@@ -82,6 +102,8 @@ bool KeyframeInstruction::run(Animation& anim)
 
 bool LoopStartInstruction::run(Animation& anim)
 {
+    if (loopCount == 0 || loopCount == 0xFF) anim.endlessStart = ((anim.keyFrame - 1) / 20.0f);
+
     anim.jumpbackIndex = anim.currentIndex;
     anim.loopCount     = loopCount;
 
@@ -90,8 +112,11 @@ bool LoopStartInstruction::run(Animation& anim)
 
 bool LoopEndInstruction::run(Animation& anim)
 {
-    if (anim.mtnFrame != timecode) return false; // not yet active
-    if (anim.loopCount == 0xFF) return true;     // endless loop, we skip those
+    // loop still running
+    if (anim.mtnFrame != timecode) return false;
+
+    // endless loop, animation ends here
+    if (anim.loopCount == 0xFF || anim.loopCount == 0x00) return true;
 
     anim.mtnFrame = newTime;
     anim.loopCount--;

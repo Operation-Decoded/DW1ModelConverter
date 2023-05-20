@@ -26,6 +26,7 @@ Face Primitive::getFace(uint32_t idx1, uint32_t idx2, uint32_t idx3)
     Face face;
     face.isGradated          = flag.isGradated;
     face.lightSourceDisabled = flag.isLightSourceDisabled;
+    face.isDoubleSided       = flag.isDoubleFaced;
     face.hasTexture          = mode.hasTexture;
     face.brightnessDisabled  = mode.hasBrightness;
     face.hasTranslucency     = mode.hasTranslucency;
@@ -78,13 +79,8 @@ std::vector<Face> Primitive::toFaces()
     std::vector<Face> faces;
 
     faces.push_back(getFace(2, 1, 0));
-    if (flag.isDoubleFaced) faces.push_back(getFace(0, 1, 2));
 
-    if (mode.isQuad)
-    {
-        faces.push_back(getFace(1, 2, 3));
-        if (flag.isDoubleFaced) faces.push_back(getFace(3, 2, 1));
-    }
+    if (mode.isQuad) faces.push_back(getFace(1, 2, 3));
 
     return faces;
 }
@@ -97,7 +93,7 @@ Primitive::Primitive(ReadBuffer& buffer)
     flag = buffer.read<TMDFlag>();
     mode = buffer.read<TMDMode>();
 
-    if (mode.option != TMDCode::POLYGON) throw std::exception("Not a polygon");
+    if (mode.option != TMDCode::POLYGON) throw std::runtime_error("Not a polygon");
 
     uint32_t vertexCount = mode.isQuad ? 4 : 3;
     uint32_t normalCount = flag.isLightSourceDisabled || mode.hasBrightness ? 0 : mode.isGouraud ? vertexCount : 1;
@@ -159,6 +155,20 @@ void Model::loadTMD(TMD& tmd)
             mesh.faces.insert(mesh.faces.end(), faces.begin(), faces.end());
 
             /*
+            // 30 materials...
+
+            mode color          // COLOR
+            mode texture        // TEXCOORD
+            mode no-light       // TEXCOORD + COLOR
+
+            double sided on     // doubleSided: true
+            double sided off    // doubleSided: false
+
+            translucency off    // alphaMode: OPAQUE
+            translucency 1      // alphaMode: BLEND | extra blendMode 1
+            translucency 2      // alphaMode: BLEND | extra blendMode 2
+            translucency 3      // alphaMode: BLEND | extra blendMode 3
+            translucency 4      // alphaMode: BLEND | extra blendMode 4
 
 
             001H GFED  0000 0CBA
@@ -253,7 +263,7 @@ Model::Model(filepath mesh, std::optional<filepath> nodes, std::optional<filepat
 
 void Model::loadMesh(filepath path)
 {
-    if (!std::filesystem::is_regular_file(path)) throw std::exception("Expected a file, but got something else.");
+    if (!std::filesystem::is_regular_file(path)) throw std::runtime_error("Expected a file, but got something else.");
 
     std::streamoff length = std::filesystem::file_size(path);
     std::ifstream input(path, std::ios::binary);
@@ -325,7 +335,8 @@ uint32_t Model::getClutY() const
 
 void Model::loadNodes(filepath path)
 {
-    if (!std::filesystem::is_regular_file(path)) throw std::exception("Expected a node file, but got something else.");
+    if (!std::filesystem::is_regular_file(path))
+        throw std::runtime_error("Expected a node file, but got something else.");
 
     auto length = std::filesystem::file_size(path);
     std::ifstream input(path, std::ios::binary);

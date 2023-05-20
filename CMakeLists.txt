@@ -1,7 +1,9 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 PROJECT(DW1ModelConverter)
 
 SET(CMAKE_CXX_STANDARD 20)
+
+include(cmake/CPM.cmake)
 
 # --- Libraries ---
 # boost
@@ -18,13 +20,26 @@ ADD_SUBDIRECTORY("libs/tinyxml2")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Dcimg_use_png")
 INCLUDE_DIRECTORIES( "libs" )
 
-# --- Tools ---
+#tinygltf
+set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
+set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
 
+CPMAddPackage(
+  NAME tinygltf
+  VERSION 2.8.9
+  GITHUB_REPOSITORY "syoyo/tinygltf"
+)
+
+# --- Configuration ---
+
+add_compile_definitions(cimg_display=0)
+
+# --- Tools ---
 SET(SOURCE_FILES ${SOURCE_FILES} "src/main.cpp" "src/TIM.cpp" "src/Collada.cpp" "src/Animation.cpp" "src/CLUTMap.cpp" 
-                                 "src/Model.cpp")
+                                 "src/Model.cpp" "src/GLTF.cpp")
 
 ADD_EXECUTABLE(DW1ModelConverter ${SOURCE_FILES})
-TARGET_LINK_LIBRARIES(DW1ModelConverter PUBLIC tinyxml2 PNG::PNG)
+TARGET_LINK_LIBRARIES(DW1ModelConverter PUBLIC tinyxml2 PNG::PNG tinygltf)
 
 # Copy .dll dependencies. Extremely dirty!
 if(WIN32)

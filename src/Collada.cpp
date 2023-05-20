@@ -38,7 +38,7 @@ void buildParamData(tinyxml2::XMLElement* parent,
     if (sid.has_value()) node->SetAttribute("sid", sid.value().c_str());
 }
 
-template<typename T> static void buildSource(tinyxml2::XMLElement* meshNode, std::vector<T>& vector, std::string id)
+template<typename T> void buildSource(tinyxml2::XMLElement* meshNode, std::vector<T>& vector, std::string id)
 {
     auto posSource = meshNode->InsertNewChildElement("source");
     posSource->SetAttribute("id", id.c_str());
@@ -65,7 +65,7 @@ template<typename T> static void buildSource(tinyxml2::XMLElement* meshNode, std
     buildParamData(posAccessor, "float", "Z");
 }
 
-template<> static void buildSource(tinyxml2::XMLElement* meshNode, std::vector<Color>& vector, std::string id)
+template<> void buildSource(tinyxml2::XMLElement* meshNode, std::vector<Color>& vector, std::string id)
 {
     auto posSource = meshNode->InsertNewChildElement("source");
     posSource->SetAttribute("id", id.c_str());
@@ -92,7 +92,7 @@ template<> static void buildSource(tinyxml2::XMLElement* meshNode, std::vector<C
     buildParamData(posAccessor, "float", "B");
 }
 
-template<> static void buildSource(tinyxml2::XMLElement* meshNode, std::vector<TexCoord>& vector, std::string id)
+template<> void buildSource(tinyxml2::XMLElement* meshNode, std::vector<TexCoord>& vector, std::string id)
 {
     auto posSource = meshNode->InsertNewChildElement("source");
     posSource->SetAttribute("id", id.c_str());
@@ -204,7 +204,7 @@ void ColladaExporter::setupXML()
 {
     document.InsertEndChild(document.NewDeclaration());
     root = document.NewElement("COLLADA");
-    root->SetAttribute("xmlns", "http://www.collada.org/2008/03/COLLADASchema");
+    root->SetAttribute("xmlns", "http://www.collada.org/2005/11/COLLADASchema");
     root->SetAttribute("version", "1.4.1");
     document.InsertEndChild(root);
 }
@@ -454,7 +454,6 @@ void ColladaExporter::buildScene()
     scene->SetAttribute("id", "scene");
     scene->SetAttribute("name", "scene");
 
-
     rootNode->SetAttribute("id", model.name.c_str());
     rootNode->SetAttribute("name", model.name.c_str());
 
@@ -473,7 +472,7 @@ void ColladaExporter::buildScene()
         instance->InsertNewChildElement("skeleton")->SetText("#node-0");
 
         auto bindMaterial = instance->InsertNewChildElement("bind_material");
-        auto tech = bindMaterial->InsertNewChildElement("technique_common");
+        auto tech         = bindMaterial->InsertNewChildElement("technique_common");
 
         auto instanceTextured = tech->InsertNewChildElement("instance_material");
         instanceTextured->SetAttribute("symbol", "material-textured");
@@ -611,14 +610,14 @@ void ColladaExporter::buildEffect1(tinyxml2::XMLElement* libEffects)
 {
     auto effect = libEffects->InsertNewChildElement("effect");
     effect->SetAttribute("id", "fx-textured");
-    auto profile  = effect->InsertNewChildElement("profile_COMMON");
+    auto profile = effect->InsertNewChildElement("profile_COMMON");
 
     auto texParam = profile->InsertNewChildElement("newparam");
     texParam->SetAttribute("sid", "tex");
     auto surface = texParam->InsertNewChildElement("surface");
     surface->SetAttribute("type", "2D");
     surface->InsertNewChildElement("init_from")->SetText("texture");
-    
+
     auto samplerParam = profile->InsertNewChildElement("newparam");
     samplerParam->SetAttribute("sid", "texture-sampler");
     auto sampler = samplerParam->InsertNewChildElement("sampler2D");
@@ -638,14 +637,14 @@ void ColladaExporter::buildEffect2(tinyxml2::XMLElement* libEffects)
 {
     auto effect = libEffects->InsertNewChildElement("effect");
     effect->SetAttribute("id", "fx-rawTextured");
-    auto profile  = effect->InsertNewChildElement("profile_COMMON");
+    auto profile = effect->InsertNewChildElement("profile_COMMON");
 
     auto texParam = profile->InsertNewChildElement("newparam");
     texParam->SetAttribute("sid", "tex");
     auto surface = texParam->InsertNewChildElement("surface");
     surface->SetAttribute("type", "2D");
     surface->InsertNewChildElement("init_from")->SetText("texture");
-    
+
     auto samplerParam = profile->InsertNewChildElement("newparam");
     samplerParam->SetAttribute("sid", "texture-sampler");
     auto sampler = samplerParam->InsertNewChildElement("sampler2D");
@@ -671,8 +670,10 @@ void ColladaExporter::buildEffect3(tinyxml2::XMLElement* libEffects)
 
     auto shader  = technique->InsertNewChildElement("lambert");
     auto diffuse = shader->InsertNewChildElement("diffuse");
-    diffuse->InsertNewChildElement("color")->SetText(
-        (std::to_string(color.r / 255.0f) + " " + std::to_string(color.g / 255.0f) + " " + std::to_string(color.b / 255.0f) + " 1").c_str());
+    diffuse->InsertNewChildElement("color")->SetText((std::to_string(color.r / 255.0f) + " " +
+                                                      std::to_string(color.g / 255.0f) + " " +
+                                                      std::to_string(color.b / 255.0f) + " 1")
+                                                         .c_str());
 }
 
 void ColladaExporter::buildEffects()
@@ -683,7 +684,8 @@ void ColladaExporter::buildEffects()
     buildEffect3(libEffects);
 }
 
-void ColladaExporter::buildMaterials() { 
+void ColladaExporter::buildMaterials()
+{
     auto libMaterials = root->InsertNewChildElement("library_materials");
 
     auto matTexture = libMaterials->InsertNewChildElement("material");
@@ -691,13 +693,11 @@ void ColladaExporter::buildMaterials() {
     matTexture->SetAttribute("name", "mat-textured");
     matTexture->InsertNewChildElement("instance_effect")->SetAttribute("url", "#fx-textured");
 
-    
     auto matRawTexture = libMaterials->InsertNewChildElement("material");
     matRawTexture->SetAttribute("id", "mat-rawTextured");
     matRawTexture->SetAttribute("name", "mat-rawTextured");
     matRawTexture->InsertNewChildElement("instance_effect")->SetAttribute("url", "#fx-rawTextured");
 
-    
     auto matFixedColor = libMaterials->InsertNewChildElement("material");
     matFixedColor->SetAttribute("id", "mat-fixedColor");
     matFixedColor->SetAttribute("name", "mat-fixedColor");

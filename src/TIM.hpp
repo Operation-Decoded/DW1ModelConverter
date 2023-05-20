@@ -26,7 +26,7 @@ struct TIMColor
 
     const RGBA getColor()
     {
-        if (r == 0 && g == 0 && b == 0 && stp == 0) return { 0, 0, 0, 0 }; // transparent
+        if (r == 0 && g == 0 && b == 0 && stp == 0) return { 0, 0, 0, 0 };   // transparent
         if (r == 0 && g == 0 && b == 0 && stp == 1) return { 0, 0, 0, 255 }; // black
 
         return { static_cast<uint8_t>(r << 3),
@@ -98,8 +98,8 @@ private:
 public:
     AbstractTIM(const std::filesystem::path path);
     AbstractTIM(const std::string name, const std::vector<uint8_t>& buffer);
-    // void writeImage(cimg_library::CImg<uint8_t>& clut, std::filesystem::path path);
     void writeImage(CLUTMap& clutMap, std::filesystem::path path);
+    std::vector<uint8_t> getImage(CLUTMap& clutMap);
 
     const std::pair<uint32_t, uint32_t> getSize() { return { width, height }; }
 
