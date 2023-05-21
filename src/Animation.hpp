@@ -144,16 +144,35 @@ struct AnimNodeData
     AnimNodeData(const Position& pos);
 };
 
-typedef std::map<Axis, std::pair<uint32_t, float>> MomentumData;
+struct TextureAnimation
+{
+    float time;
+    uint16_t srcX;
+    uint16_t srcY;
+    uint16_t destX;
+    uint16_t destY;
+    uint16_t width;
+    uint16_t height;
+};
+
+struct SoundAnimation
+{
+    float time;
+    uint16_t vabId;
+    uint16_t soundId;
+};
 
 class Animation
 {
+    using MomentumData = std::map<Axis, std::pair<uint32_t, float>>;
+
 private:
     std::vector<AnimNodeData> nodeData;
     std::vector<MomentumData> momentumData;
 
-    uint32_t mtnFrame = 1; // used by MTN data, can jump
-    uint32_t keyFrame = 1; // used by keyframe data, is continuious
+    uint32_t mtnFrame  = 1; // used by MTN data, can jump
+    uint32_t keyFrame  = 1; // used by keyframe data, is continuious
+    float keyFrameTime = 0.0f;
 
     uint32_t currentIndex  = 0;
     uint32_t jumpbackIndex = 0;
@@ -172,6 +191,8 @@ private:
 public:
     // start of endless looping, as time code
     float endlessStart = -1;
+    std::vector<SoundAnimation> sound;
+    std::vector<TextureAnimation> texture;
 
 public:
     Animation(const MMDAnimation& anim);

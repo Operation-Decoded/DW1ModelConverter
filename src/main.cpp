@@ -87,8 +87,6 @@ int main()
 
     // TODO support for multiple images (that one arena)
     // TODO support for images being used by multiple models
-    // TODO playSound animation data into glTF
-    // TODO changeTexture animation data into glTF
 
     std::cout << "Done" << std::endl;
     return 0;

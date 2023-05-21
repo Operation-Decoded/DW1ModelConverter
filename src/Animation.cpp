@@ -42,6 +42,7 @@ Animation::Animation(const MMDAnimation& anim)
 
         mtnFrame++;
         keyFrame++;
+        keyFrameTime = (keyFrame - 1) / 20.0f;
     }
 
     for (uint32_t node = 0; node < momentumData.size(); node++)
@@ -79,9 +80,8 @@ void Animation::updateData(const Axis axis, uint32_t node)
 
     auto oldPos     = nodeData[node].data[axis].back();
     auto frameCount = keyFrame - oldMomentum.first;
-    auto timeCode   = (keyFrame - 1) / 20.0f;
 
-    nodeData[node].data[axis].push_back({ timeCode, oldPos.second + (oldMomentum.second * frameCount) });
+    nodeData[node].data[axis].push_back({ keyFrameTime, oldPos.second + (oldMomentum.second * frameCount) });
 }
 
 bool KeyframeInstruction::run(Animation& anim)
@@ -102,7 +102,7 @@ bool KeyframeInstruction::run(Animation& anim)
 
 bool LoopStartInstruction::run(Animation& anim)
 {
-    if (loopCount == 0 || loopCount == 0xFF) anim.endlessStart = ((anim.keyFrame - 1) / 20.0f);
+    if (loopCount == 0 || loopCount == 0xFF) anim.endlessStart = anim.keyFrameTime;
 
     anim.jumpbackIndex = anim.currentIndex;
     anim.loopCount     = loopCount;
@@ -130,6 +130,7 @@ bool PlaySoundInstruction::run(Animation& anim)
 {
     if (anim.mtnFrame != timecode) return false;
 
+    anim.sound.emplace_back(anim.keyFrameTime, vabId, soundId);
     return true;
 }
 
@@ -137,6 +138,7 @@ bool TextureInstruction::run(Animation& anim)
 {
     if (anim.mtnFrame != timecode) return false;
 
+    anim.texture.emplace_back(anim.keyFrameTime, srcX, srcY, destX, destY, width, height);
     return true;
 }
 

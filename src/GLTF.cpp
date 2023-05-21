@@ -444,7 +444,34 @@ void GLTFExporter::buildAnimations()
         }
 
         tinygltf::Value::Object extras;
-        extras.emplace("endlessStart", std::to_string(data.endlessStart));
+        tinygltf::Value::Array soundArray;
+        tinygltf::Value::Array textureArray;
+
+        for (auto s : data.sound)
+        {
+            tinygltf::Value::Object sound;
+            sound.emplace("time", s.time);
+            sound.emplace("vabId", s.vabId);
+            sound.emplace("soundId", s.soundId);
+            soundArray.emplace_back(sound);
+        }
+
+        for (auto t : data.texture)
+        {
+            tinygltf::Value::Object texture;
+            texture.emplace("time", t.time);
+            texture.emplace("srxX", t.srcX);
+            texture.emplace("srcY", t.srcY);
+            texture.emplace("destX", t.destX);
+            texture.emplace("destY", t.destY);
+            texture.emplace("width", t.width);
+            texture.emplace("height", t.height);
+            textureArray.emplace_back(texture);
+        }
+
+        if (data.endlessStart != -1) extras.emplace("endlessStart", std::to_string(data.endlessStart));
+        if (!data.sound.empty()) extras.emplace("sounds", soundArray);
+        if (!data.texture.empty()) extras.emplace("textures", textureArray);
         anim.extras = tinygltf::Value(extras);
         push(model.animations, anim);
     }
@@ -485,14 +512,6 @@ GLTFExporter::GLTFExporter(Model& mmd, AbstractTIM& tim)
     buildMeshEntries();
     buildAnimations();
     buildTexture();
-    /*
-        tinygltf::TinyGLTF gltf;
-        gltf.WriteGltfSceneToFile(&model,
-                                  "MUGE.gltf",
-                                  true,   // embedImages
-                                  true,   // embedBuffers
-                                  true,   // pretty print
-                                  false); // write binary*/
 }
 
 void GLTFExporter::save(const std::string& filename)
