@@ -269,16 +269,13 @@ public:
     std::unique_ptr<MMDAnimations> anims;
     std::vector<NodeEntry> skeleton;
 
-    std::optional<filepath> texture;
-
 public:
     uint32_t getTexturePage() const;
     uint32_t getClutX() const;
     uint32_t getClutY() const;
 
-    // Model(std::filesystem::path name, std::vector<Mesh> meshes, std::unique_ptr<MMDAnimations> anims) : name(name),
-    // meshes(meshes), anims(std::move(anims)) {}
-    Model(filepath mesh, std::optional<filepath> nodes = {}, std::optional<filepath> texture = {});
+    Model(filepath mesh, std::optional<filepath> nodes = {});
+    Model(filepath mesh, std::vector<NodeEntry> nodes = {});
 };
 
 /*

@@ -35,7 +35,7 @@ Animation::Animation(const MMDAnimation& anim)
         momentumData.emplace_back();
     }
 
-    while (mtnFrame <= anim.frameCount)
+    do
     {
         while (anim.instructions.size() > currentIndex && anim.instructions[currentIndex]->run(*this))
             currentIndex++;
@@ -43,19 +43,19 @@ Animation::Animation(const MMDAnimation& anim)
         mtnFrame++;
         keyFrame++;
         keyFrameTime = (keyFrame - 1) / 20.0f;
-    }
+    } while (mtnFrame < anim.frameCount);
 
     for (uint32_t node = 0; node < momentumData.size(); node++)
     {
-        setMomentum(Axis::SCALE_X, node, 0.0f);
-        setMomentum(Axis::SCALE_Y, node, 0.0f);
-        setMomentum(Axis::SCALE_Z, node, 0.0f);
-        setMomentum(Axis::ROT_X, node, 0.0f);
-        setMomentum(Axis::ROT_Y, node, 0.0f);
-        setMomentum(Axis::ROT_Z, node, 0.0f);
-        setMomentum(Axis::POS_X, node, 0.0f);
-        setMomentum(Axis::POS_Y, node, 0.0f);
-        setMomentum(Axis::POS_Z, node, 0.0f);
+        updateData(Axis::SCALE_X, node);
+        updateData(Axis::SCALE_Y, node);
+        updateData(Axis::SCALE_Z, node);
+        updateData(Axis::ROT_X, node);
+        updateData(Axis::ROT_Y, node);
+        updateData(Axis::ROT_Z, node);
+        updateData(Axis::POS_X, node);
+        updateData(Axis::POS_Y, node);
+        updateData(Axis::POS_Z, node);
     }
 }
 

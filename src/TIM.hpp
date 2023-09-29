@@ -99,6 +99,7 @@ public:
     AbstractTIM(const std::filesystem::path path);
     AbstractTIM(const std::string name, const std::vector<uint8_t>& buffer);
     void writeImage(CLUTMap& clutMap, std::filesystem::path path);
+    void writeImage(int clutId, std::filesystem::path path);
     std::vector<uint8_t> getImage(CLUTMap& clutMap);
 
     const std::pair<uint32_t, uint32_t> getSize() { return { width, height }; }

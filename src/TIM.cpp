@@ -30,6 +30,21 @@ void AbstractTIM::writeImage(CLUTMap& clutMap, std::filesystem::path path)
     new_image.save_png(path.string().c_str());
 }
 
+void AbstractTIM::writeImage(int clutId, std::filesystem::path path)
+{
+    cimg::CImg<uint8_t> new_image(width, height, 1, 4, 0);
+
+    for (uint32_t y = 0; y < height; y++)
+        for (uint32_t x = 0; x < width; x++)
+        {
+            TIMColor color = palettes[clutId][pixels[(y * static_cast<uint64_t>(width)) + x]];
+            RGBA rgba      = color.getColor();
+            new_image.draw_point(x, y, reinterpret_cast<uint8_t*>(&rgba), 1.0f);
+        }
+
+    new_image.save_png(path.string().c_str());
+}
+
 std::vector<uint8_t> AbstractTIM::getImage(CLUTMap& clutMap)
 {
     std::vector<uint8_t> data;

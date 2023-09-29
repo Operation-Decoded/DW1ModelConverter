@@ -35,7 +35,7 @@ CPMAddPackage(
 add_compile_definitions(cimg_display=0)
 
 # --- Tools ---
-SET(SOURCE_FILES ${SOURCE_FILES} "src/main.cpp" "src/TIM.cpp" "src/Collada.cpp" "src/Animation.cpp" "src/CLUTMap.cpp" 
+SET(SOURCE_FILES ${SOURCE_FILES} "src/main.cpp" "src/TIM.cpp" "src/Animation.cpp" "src/CLUTMap.cpp" 
                                  "src/Model.cpp" "src/GLTF.cpp")
 
 ADD_EXECUTABLE(DW1ModelConverter ${SOURCE_FILES})

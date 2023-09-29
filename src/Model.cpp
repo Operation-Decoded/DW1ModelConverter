@@ -251,12 +251,13 @@ void Model::loadTMD(TMD& tmd)
     }
 }
 
-Model::Model(filepath mesh, std::optional<filepath> nodes, std::optional<filepath> texture)
-    : texture(texture)
+Model::Model(filepath mesh, std::vector<NodeEntry> nodes) : skeleton(nodes), name(mesh.filename().string())
 {
-    std::streamoff length = std::filesystem::file_size(mesh);
-    name                  = mesh.filename().string();
+    loadMesh(mesh);
+}
 
+Model::Model(filepath mesh, std::optional<filepath> nodes) : name(mesh.filename().string())
+{
     if (nodes) loadNodes(nodes.value()); // load nodes before mesh, since animations need to know about the bone count
     loadMesh(mesh);
 }
