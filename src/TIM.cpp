@@ -83,15 +83,13 @@ AbstractTIM::AbstractTIM(const std::filesystem::path path)
     std::ifstream input(path, std::ios::binary);
     std::vector<uint8_t> buffer((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
 
-    init(path.filename().string(), buffer);
+    init(buffer);
 }
 
-AbstractTIM::AbstractTIM(const std::string name, const std::vector<uint8_t>& buffer) { init(name, buffer); }
+AbstractTIM::AbstractTIM(const std::vector<uint8_t>& buffer) { init(buffer); }
 
-void AbstractTIM::init(const std::string name, const std::vector<uint8_t>& buffer)
+void AbstractTIM::init(const std::vector<uint8_t>& buffer)
 {
-    this->name = name;
-
     TIM tim;
     tim.magic  = reinterpret_cast<const uint32_t*>(buffer.data())[0];
     tim.flag   = reinterpret_cast<const uint32_t*>(buffer.data())[1];

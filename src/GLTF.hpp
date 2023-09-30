@@ -60,7 +60,7 @@ private:
     void buildAnimations();
     void buildTexture();
 
-    template<typename T> std::size_t buildAccessor(std::vector<T> data, int componentType, int type);
+    template<typename T> std::size_t buildAccessor(std::vector<T> data, int componentType, int type, int target);
 
     int32_t buildMaterial(MaterialMode mode);
     tinygltf::Primitive buildPrimitive(Mesh& mesh, MaterialMode material, std::vector<Face> faces);
@@ -72,5 +72,5 @@ private:
 public:
     GLTFExporter(Model& model, AbstractTIM& tim);
 
-    void save(const std::string& filename);
+    bool save(const std::string& filename);
 };

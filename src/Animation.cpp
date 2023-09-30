@@ -1,6 +1,6 @@
 #include "Animation.hpp"
 
-static float axisFactor(Axis axis)
+static constexpr float axisFactor(Axis axis)
 {
     switch (axis)
     {

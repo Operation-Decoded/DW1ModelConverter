@@ -81,8 +81,6 @@ typedef std::vector<TIMColor> TIMPalette;
 class AbstractTIM
 {
 private:
-    std::string name;
-
     uint32_t width  = 0;
     uint32_t height = 0;
 
@@ -97,7 +95,7 @@ private:
 
 public:
     AbstractTIM(const std::filesystem::path path);
-    AbstractTIM(const std::string name, const std::vector<uint8_t>& buffer);
+    AbstractTIM(const std::vector<uint8_t>& buffer);
     void writeImage(CLUTMap& clutMap, std::filesystem::path path);
     void writeImage(int clutId, std::filesystem::path path);
     std::vector<uint8_t> getImage(CLUTMap& clutMap);
@@ -105,5 +103,5 @@ public:
     const std::pair<uint32_t, uint32_t> getSize() { return { width, height }; }
 
 private:
-    void init(const std::string name, const std::vector<uint8_t>& buffer);
+    void init(const std::vector<uint8_t>& buffer);
 };

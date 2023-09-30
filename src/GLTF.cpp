@@ -158,7 +158,7 @@ std::size_t GLTFExporter::buildPrimitiveVertex(Mesh& mesh, std::vector<Face> fac
         data.push_back(mesh.vertices[face.v3].convertToFixedPoint(0));
     }
 
-    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3);
+    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3, TINYGLTF_TARGET_ARRAY_BUFFER);
 }
 
 std::size_t GLTFExporter::buildPrimitiveNormal(Mesh& mesh, std::vector<Face> faces)
@@ -172,7 +172,7 @@ std::size_t GLTFExporter::buildPrimitiveNormal(Mesh& mesh, std::vector<Face> fac
         data.push_back(mesh.normals[face.n3]);
     }
 
-    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3);
+    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3, TINYGLTF_TARGET_ARRAY_BUFFER);
 }
 
 std::size_t GLTFExporter::buildPrimitiveColor(std::vector<Face> faces)
@@ -186,7 +186,7 @@ std::size_t GLTFExporter::buildPrimitiveColor(std::vector<Face> faces)
         data.push_back(face.color3);
     }
 
-    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, TINYGLTF_TYPE_VEC3);
+    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, TINYGLTF_TYPE_VEC3, TINYGLTF_TARGET_ARRAY_BUFFER);
 }
 
 std::size_t GLTFExporter::buildPrimitiveTexcoord(std::vector<Face> faces)
@@ -200,14 +200,15 @@ std::size_t GLTFExporter::buildPrimitiveTexcoord(std::vector<Face> faces)
         data.push_back(TexCoord(face.uv3, tim.getSize()));
     }
 
-    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC2);
+    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC2, TINYGLTF_TARGET_ARRAY_BUFFER);
 }
 
-template<typename T> std::size_t GLTFExporter::buildAccessor(std::vector<T> data, int componentType, int type)
+template<typename T>
+std::size_t GLTFExporter::buildAccessor(std::vector<T> data, int componentType, int type, int target)
 {
     tinygltf::Buffer buffer;
-    T min = {};
-    T max = {};
+    T min = data[0];
+    T max = data[0];
 
     for (T& val : data)
     {
@@ -223,7 +224,7 @@ template<typename T> std::size_t GLTFExporter::buildAccessor(std::vector<T> data
     view.buffer     = bufferId;
     view.byteLength = buffer.data.size();
     view.byteOffset = 0;
-    view.target     = TINYGLTF_TARGET_ARRAY_BUFFER;
+    view.target     = target;
 
     auto viewId = push(model.bufferViews, view);
 
@@ -291,7 +292,6 @@ void GLTFExporter::buildSkeletonScene()
             scene.nodes.push_back(id);
 
         if (id > 0) model.skins[skinId].joints.push_back(id);
-        node.skin = skinId;
     }
 
     model.defaultScene = push(model.scenes, scene);
@@ -361,6 +361,8 @@ int32_t GLTFExporter::buildMaterial(MaterialMode mode)
     return id;
 }
 
+#include <iostream>
+
 void GLTFExporter::buildAnimations()
 {
     for (auto& raw : mmd.anims->anims)
@@ -378,34 +380,46 @@ void GLTFExporter::buildAnimations()
             std::vector<float> scaleTime;
             std::vector<FVector> scale;
 
+            float time = -1;
             for (int i = 0; i < a.data[Axis::POS_X].size(); i++)
             {
                 auto posX = a.data[Axis::POS_X][i];
                 auto posY = a.data[Axis::POS_Y][i];
                 auto posZ = a.data[Axis::POS_Z][i];
 
+                if (time >= posX.first) continue;
+
                 posTime.push_back(posX.first);
                 pos.emplace_back(posX.second, posY.second, posZ.second);
+                time = posX.first;
             }
 
+            time = -1;
             for (int i = 0; i < a.data[Axis::ROT_X].size(); i++)
             {
                 auto rotX = a.data[Axis::ROT_X][i];
                 auto rotY = a.data[Axis::ROT_Y][i];
                 auto rotZ = a.data[Axis::ROT_Z][i];
 
+                if (time >= rotX.first) continue;
+
                 rotTime.push_back(rotX.first);
                 rot.emplace_back(FVector{ rotX.second, rotY.second, rotZ.second });
+                time = rotX.first;
             }
 
+            time = -1;
             for (int i = 0; i < a.data[Axis::SCALE_X].size(); i++)
             {
                 auto scaleX = a.data[Axis::SCALE_X][i];
                 auto scaleY = a.data[Axis::SCALE_Y][i];
                 auto scaleZ = a.data[Axis::SCALE_Z][i];
 
+                if (time >= scaleX.first) continue;
+
                 scaleTime.push_back(scaleX.first);
                 scale.emplace_back(scaleX.second, scaleY.second, scaleZ.second);
+                time = scaleX.first;
             }
 
             tinygltf::AnimationChannel posChannel;
@@ -415,17 +429,17 @@ void GLTFExporter::buildAnimations()
             tinygltf::AnimationSampler rotSampler;
             tinygltf::AnimationSampler scaleSampler;
 
-            posSampler.input         = buildAccessor(posTime, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_SCALAR);
+            posSampler.input         = buildAccessor(posTime, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_SCALAR, 0);
             posSampler.interpolation = "LINEAR";
-            posSampler.output        = buildAccessor(pos, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3);
+            posSampler.output        = buildAccessor(pos, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3, 0);
 
-            rotSampler.input         = buildAccessor(rotTime, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_SCALAR);
+            rotSampler.input         = buildAccessor(rotTime, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_SCALAR, 0);
             rotSampler.interpolation = "LINEAR";
-            rotSampler.output        = buildAccessor(rot, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC4);
+            rotSampler.output        = buildAccessor(rot, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC4, 0);
 
-            scaleSampler.input         = buildAccessor(scaleTime, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_SCALAR);
+            scaleSampler.input = buildAccessor(scaleTime, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_SCALAR, 0);
             scaleSampler.interpolation = "LINEAR";
-            scaleSampler.output        = buildAccessor(scale, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3);
+            scaleSampler.output        = buildAccessor(scale, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3, 0);
 
             posChannel.target_node   = nodeId;
             posChannel.target_path   = "translation";
@@ -514,13 +528,13 @@ GLTFExporter::GLTFExporter(Model& mmd, AbstractTIM& tim)
     buildTexture();
 }
 
-void GLTFExporter::save(const std::string& filename)
+bool GLTFExporter::save(const std::string& filename)
 {
     tinygltf::TinyGLTF gltf;
-    gltf.WriteGltfSceneToFile(&model,
-                              filename,
-                              true,   // embedImages
-                              true,   // embedBuffers
-                              true,   // pretty print
-                              false); // write binary
+    return gltf.WriteGltfSceneToFile(&model,
+                                     filename,
+                                     true,   // embedImages
+                                     true,   // embedBuffers
+                                     true,   // pretty print
+                                     false); // write binary
 }

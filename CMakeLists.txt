@@ -26,7 +26,7 @@ set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
 
 CPMAddPackage(
   NAME tinygltf
-  VERSION 2.8.9
+  VERSION 2.8.17
   GITHUB_REPOSITORY "syoyo/tinygltf"
 )
 
