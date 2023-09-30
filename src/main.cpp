@@ -48,6 +48,18 @@ struct Entry
 };
 
 // data
+/*
+ *                  name     para     skel
+ * SLUS_010.32  0x133B44 0x12CEB4 0x11ce60
+ * SLPS_017.97  0x13d844 0x13b344 0x123780 (1.1)
+ * SLPS_017.97  0x13CE24 0x13A924 0x122E68 (1.0)
+ * SLPM_804.02  0x13e874 0x13c32c 0x124728
+ * SLES_029.14  0x13AC0C 0x138B5C 0x122DD4
+ * SLES_034.34  0x13AE00 0x138D50 0x122DE4
+ * SLES_034.35  0x13ADD8 0x138D28 0x122D6C
+ * SLES_034.36  0x13B7E4 0x139734 0x122DA0
+ * SLES_034.37  0x13B314 0x139264 0x122DA0
+ */
 constexpr uint32_t PSEXE_OFFSET(uint32_t offset) { return offset - 0x90000; }
 
 constexpr VersionData SLUS_DATA = {
@@ -58,7 +70,7 @@ constexpr VersionData SLUS_DATA = {
     .skelOffset = PSEXE_OFFSET(0x11ce60),
 };
 
-constexpr VersionData SLPS_DATA = {
+constexpr VersionData SLPS_11_DATA = {
     .psexePath  = "SLPS_017.97",
     .alltimPath = "CHDAT/ALLTIM.TIM",
     .nameOffset = PSEXE_OFFSET(0x13d844),
@@ -66,6 +78,64 @@ constexpr VersionData SLPS_DATA = {
     .skelOffset = PSEXE_OFFSET(0x123780),
 };
 
+constexpr VersionData SLPS_10_DATA = {
+    .psexePath  = "SLPS_017.97",
+    .alltimPath = "CHDAT/ALLTIM.TIM",
+    .nameOffset = PSEXE_OFFSET(0x13ce24),
+    .paraOffset = PSEXE_OFFSET(0x13a924),
+    .skelOffset = PSEXE_OFFSET(0x122e68),
+};
+
+constexpr VersionData SLPM_DATA = {
+    .psexePath  = "SLPM_804.02",
+    .alltimPath = "CHDAT/ALLTIM.TIM",
+    .nameOffset = PSEXE_OFFSET(0x13e874),
+    .paraOffset = PSEXE_OFFSET(0x13c32c),
+    .skelOffset = PSEXE_OFFSET(0x124728),
+};
+
+constexpr VersionData SLES02914_DATA = {
+    .psexePath  = "SLES_029.14",
+    .alltimPath = "CHDAT/ALLTIM.TIM",
+    .nameOffset = PSEXE_OFFSET(0x13ac0c),
+    .paraOffset = PSEXE_OFFSET(0x138b5c),
+    .skelOffset = PSEXE_OFFSET(0x122dd4),
+};
+
+constexpr VersionData SLES03434_DATA = {
+    .psexePath  = "SLES_034.34",
+    .alltimPath = "CHDAT/ALLTIM.TIM",
+    .nameOffset = PSEXE_OFFSET(0x13ae00),
+    .paraOffset = PSEXE_OFFSET(0x138d50),
+    .skelOffset = PSEXE_OFFSET(0x122de4),
+};
+
+constexpr VersionData SLES03435_DATA = {
+    .psexePath  = "SLES_034.35",
+    .alltimPath = "CHDAT/ALLTIM.TIM",
+    .nameOffset = PSEXE_OFFSET(0x13add8),
+    .paraOffset = PSEXE_OFFSET(0x138d28),
+    .skelOffset = PSEXE_OFFSET(0x122d6c),
+};
+
+constexpr VersionData SLES03436_DATA = {
+    .psexePath  = "SLES_034.36",
+    .alltimPath = "CHDAT/ALLTIM.TIM",
+    .nameOffset = PSEXE_OFFSET(0x13b7e4),
+    .paraOffset = PSEXE_OFFSET(0x139734),
+    .skelOffset = PSEXE_OFFSET(0x122da0),
+};
+
+constexpr VersionData SLES03437_DATA = {
+    .psexePath  = "SLES_034.37",
+    .alltimPath = "CHDAT/ALLTIM.TIM",
+    .nameOffset = PSEXE_OFFSET(0x13b314),
+    .paraOffset = PSEXE_OFFSET(0x139264),
+    .skelOffset = PSEXE_OFFSET(0x122da0),
+};
+
+constexpr VersionData VERSION_DATA[] = { SLUS_DATA,      SLPS_11_DATA,   SLPS_10_DATA,   SLPM_DATA,     SLES02914_DATA,
+                                         SLES03434_DATA, SLES03435_DATA, SLES03436_DATA, SLES03437_DATA };
 // functions
 
 template<typename T> std::vector<T> readFileAsVector(std::filesystem::path path)
@@ -78,19 +148,32 @@ template<typename T> std::vector<T> readFileAsVector(std::filesystem::path path)
     return data;
 }
 
+VersionData getVersion(std::filesystem::path parentPath)
+{
+    VersionData version;
+
+    if (std::filesystem::exists(parentPath / SLPS_10_DATA.psexePath))
+    {
+        auto size = std::filesystem::file_size(parentPath / SLPS_10_DATA.psexePath);
+
+        if (size == 0xAF000)
+            return SLPS_11_DATA;
+        else if (size == 0xAE000)
+            return SLPS_10_DATA;
+    }
+
+    for (VersionData v : VERSION_DATA)
+        if (std::filesystem::exists(parentPath / v.psexePath)) return v;
+
+    return SLUS_DATA;
+}
+
 std::vector<Entry> loadDigimonEntries(std::filesystem::path parentPath)
 {
     using DigimonFileName = char[8];
 
-    VersionData version;
-    if (std::filesystem::exists(parentPath / SLUS_DATA.psexePath))
-        version = SLUS_DATA;
-    else if (std::filesystem::exists(parentPath / SLPS_DATA.psexePath))
-        version = SLPS_DATA;
-    else
-        return {};
-
     std::vector<Entry> digimonEntries;
+    VersionData version                 = getVersion(parentPath);
     std::vector<uint8_t> data           = readFileAsVector<uint8_t>(parentPath / version.psexePath);
     std::vector<MMDTexture> textureData = readFileAsVector<MMDTexture>(parentPath / version.alltimPath);
     DigimonFileName* names              = reinterpret_cast<DigimonFileName*>(data.data() + version.nameOffset);
