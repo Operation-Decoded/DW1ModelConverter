@@ -48,6 +48,8 @@ struct Entry
 };
 
 // data
+constexpr uint32_t PSEXE_OFFSET(uint32_t offset) { return offset - 0x90000; }
+
 constexpr VersionData SLUS_DATA = {
     .psexePath  = "SLUS_010.32",
     .alltimPath = "CHDAT/ALLTIM.TIM",
@@ -65,7 +67,6 @@ constexpr VersionData SLPS_DATA = {
 };
 
 // functions
-constexpr uint32_t PSEXE_OFFSET(uint32_t offset) { return offset - 0x90000; }
 
 template<typename T> std::vector<T> readFileAsVector(std::filesystem::path path)
 {
