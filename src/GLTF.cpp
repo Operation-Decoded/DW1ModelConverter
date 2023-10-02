@@ -5,6 +5,8 @@
 
 #include "GLTF.hpp"
 
+#include <numbers>
+
 struct Quaternion
 {
     float x;
@@ -15,12 +17,12 @@ struct Quaternion
     Quaternion() = default;
     Quaternion(FVector angles)
     {
-        double c1 = std::cos((angles.x * M_PI / 180.0f) * 0.5);
-        double s1 = std::sin((angles.x * M_PI / 180.0f) * 0.5);
-        double c2 = std::cos((angles.y * M_PI / 180.0f) * 0.5);
-        double s2 = std::sin((angles.y * M_PI / 180.0f) * 0.5);
-        double c3 = std::cos((angles.z * M_PI / 180.0f) * 0.5);
-        double s3 = std::sin((angles.z * M_PI / 180.0f) * 0.5);
+        double c1 = std::cos((angles.x * std::numbers::pi / 180.0f) * 0.5);
+        double s1 = std::sin((angles.x * std::numbers::pi / 180.0f) * 0.5);
+        double c2 = std::cos((angles.y * std::numbers::pi / 180.0f) * 0.5);
+        double s2 = std::sin((angles.y * std::numbers::pi / 180.0f) * 0.5);
+        double c3 = std::cos((angles.z * std::numbers::pi / 180.0f) * 0.5);
+        double s3 = std::sin((angles.z * std::numbers::pi / 180.0f) * 0.5);
 
         this->w = c1 * c2 * c3 - s1 * s2 * s3;
         this->x = s1 * c2 * c3 + c1 * s2 * s3;
