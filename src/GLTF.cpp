@@ -5,6 +5,7 @@
 
 #include "GLTF.hpp"
 
+#include <format>
 #include <numbers>
 
 struct Quaternion
@@ -267,6 +268,7 @@ void GLTFExporter::buildSkeletonScene()
     for (auto& mmdNode : mmd.skeleton)
     {
         tinygltf::Node node;
+        node.name = std::format("node-{}", model.nodes.size());
 
         if (mmdNode.object != 255)
         {
