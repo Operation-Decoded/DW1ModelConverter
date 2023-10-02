@@ -1,7 +1,8 @@
 #pragma once
 
-#include "CImg/CImg.h"
 #include "CLUTMap.hpp"
+
+#include <CImg.h>
 
 #include <filesystem>
 #include <map>

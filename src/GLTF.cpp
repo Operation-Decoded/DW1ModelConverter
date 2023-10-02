@@ -144,7 +144,7 @@ template<> TexCoord myMax(TexCoord& a, TexCoord& b)
 void GLTFExporter::buildAssetEntry()
 {
     model.asset.version   = "2.0";
-    model.asset.generator = "DW1ModelConverter";
+    model.asset.generator = "DW1ModelConverter v1.0";
 }
 
 std::size_t GLTFExporter::buildPrimitiveVertex(Mesh& mesh, std::vector<Face> faces)

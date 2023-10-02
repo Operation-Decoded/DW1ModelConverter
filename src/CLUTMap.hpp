@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CImg/CImg.h"
+#include <CImg.h>
 
 #include <cstdint>
 #include <map>

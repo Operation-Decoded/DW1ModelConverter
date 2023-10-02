@@ -1,24 +1,12 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
-PROJECT(DW1ModelConverter)
-
-SET(CMAKE_CXX_STANDARD 20)
+cmake_minimum_required(VERSION 3.12)
+project(DW1ModelConverter)
 
 include(cmake/CPM.cmake)
 
 # --- Libraries ---
-# boost
-#FIND_PACKAGE(Boost 1.75 REQUIRED)
-#INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
-# libpng
-FIND_PACKAGE(PNG REQUIRED)
-INCLUDE_DIRECTORIES(${PNG_INCLUDE_DIR})
-
-# tinyxml2
-ADD_SUBDIRECTORY("libs/tinyxml2")
-
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Dcimg_use_png")
-INCLUDE_DIRECTORIES( "libs" )
+# disable deprecation warning for libraries
+set(CMAKE_WARN_DEPRECATED FALSE CACHE BOOL "" FORCE)
 
 #tinygltf
 set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
@@ -30,25 +18,45 @@ CPMAddPackage(
   GITHUB_REPOSITORY "syoyo/tinygltf"
 )
 
-# --- Configuration ---
+# zlib
+set(SKIP_INSTALL_ALL ON)
 
-add_compile_definitions(cimg_display=0)
+CPMAddPackage(
+  NAME zlib
+  VERSION 1.3
+  GITHUB_REPOSITORY "madler/zlib"
+)
 
-# --- Tools ---
-SET(SOURCE_FILES ${SOURCE_FILES} "src/main.cpp" "src/TIM.cpp" "src/Animation.cpp" "src/CLUTMap.cpp" 
+# libpng
+CPMAddPackage(
+  NAME libpng
+  VERSION 1.6.40
+  GITHUB_REPOSITORY "glennrp/libpng"
+)
+
+# cimg
+CPMAddPackage(
+  NAME cimg
+  VERSION .3.3.0
+  GITHUB_REPOSITORY "GreycLab/CImg"
+)
+
+# re-enable deprecation warning
+set(CMAKE_WARN_DEPRECATED TRUE CACHE BOOL "" FORCE)
+
+# --- Target ---
+set(SOURCE_FILES ${SOURCE_FILES} "src/main.cpp" "src/TIM.cpp" "src/Animation.cpp" "src/CLUTMap.cpp" 
                                  "src/Model.cpp" "src/GLTF.cpp")
 
-ADD_EXECUTABLE(DW1ModelConverter ${SOURCE_FILES})
-TARGET_LINK_LIBRARIES(DW1ModelConverter PUBLIC tinyxml2 PNG::PNG tinygltf)
+add_executable(DW1ModelConverter ${SOURCE_FILES})
 
-# Copy .dll dependencies. Extremely dirty!
-if(WIN32)
-    FIND_FILE(PNG_FILE "bin/libpng16d.dll")
-    FIND_FILE(ZLIB_FILE "bin/zlib.dll" PATHS "${ZLIB_INCLUDE_DIR}/..")
+set_target_properties(DW1ModelConverter PROPERTIES CXX_STANDARD 20)
+target_include_directories(DW1ModelConverter PRIVATE ${cimg_SOURCE_DIR})
+target_link_libraries(DW1ModelConverter PRIVATE png_static tinygltf)
 
-    ADD_CUSTOM_COMMAND(TARGET DW1ModelConverter POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy ${PNG_FILE} $<TARGET_FILE_DIR:DW1ModelConverter>
-      COMMAND ${CMAKE_COMMAND} -E copy ${ZLIB_FILE} $<TARGET_FILE_DIR:DW1ModelConverter>
-      COMMAND_EXPAND_LISTS
-    )
-endif()
+target_compile_definitions(DW1ModelConverter PRIVATE cimg_display=0)
+target_compile_definitions(DW1ModelConverter PRIVATE cimg_use_png)
+
+message("${PROJECT_SOURCE_DIR}")
+
+install(TARGETS DW1ModelConverter)# RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/install)
