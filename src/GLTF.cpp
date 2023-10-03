@@ -380,8 +380,6 @@ void GLTFExporter::buildAnimations()
         tinygltf::Animation anim;
         int nodeId = 0;
 
-        std::cout << i++ << std::endl;
-
         for (auto a : data.getData())
         {
             std::vector<float> posTime;

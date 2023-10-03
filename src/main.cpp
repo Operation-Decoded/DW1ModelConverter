@@ -22,7 +22,22 @@ struct DigimonPara
     uint8_t padding;
 };
 
+struct DigimonParaPAL
+{
+    int32_t boneCount;
+    int16_t radius;
+    int16_t height;
+    uint8_t type;
+    uint8_t level;
+    uint8_t special[3];
+    uint8_t dropItem;
+    uint8_t dropChance;
+    int8_t moves[16];
+    uint8_t padding;
+};
+
 static_assert(sizeof(DigimonPara) == 52);
+static_assert(sizeof(DigimonParaPAL) == 32);
 
 struct VersionData
 {
@@ -31,6 +46,7 @@ struct VersionData
     uint32_t nameOffset;
     uint32_t paraOffset;
     uint32_t skelOffset;
+    bool isPAL;
 };
 
 struct MMDTexture
@@ -41,7 +57,6 @@ struct MMDTexture
 struct Entry
 {
     std::string filename;
-    DigimonPara para;
     std::vector<NodeEntry> skeleton;
     std::vector<uint8_t> texture;
 };
@@ -67,6 +82,7 @@ constexpr VersionData SLUS_DATA = {
     .nameOffset = PSEXE_OFFSET(0x133b44),
     .paraOffset = PSEXE_OFFSET(0x12ceb4),
     .skelOffset = PSEXE_OFFSET(0x11ce60),
+    .isPAL      = false,
 };
 
 constexpr VersionData SLPS_11_DATA = {
@@ -75,6 +91,7 @@ constexpr VersionData SLPS_11_DATA = {
     .nameOffset = PSEXE_OFFSET(0x13d844),
     .paraOffset = PSEXE_OFFSET(0x13b344),
     .skelOffset = PSEXE_OFFSET(0x123780),
+    .isPAL      = false,
 };
 
 constexpr VersionData SLPS_10_DATA = {
@@ -83,6 +100,7 @@ constexpr VersionData SLPS_10_DATA = {
     .nameOffset = PSEXE_OFFSET(0x13ce24),
     .paraOffset = PSEXE_OFFSET(0x13a924),
     .skelOffset = PSEXE_OFFSET(0x122e68),
+    .isPAL      = false,
 };
 
 constexpr VersionData SLPM_DATA = {
@@ -91,6 +109,7 @@ constexpr VersionData SLPM_DATA = {
     .nameOffset = PSEXE_OFFSET(0x13e874),
     .paraOffset = PSEXE_OFFSET(0x13c32c),
     .skelOffset = PSEXE_OFFSET(0x124728),
+    .isPAL      = false,
 };
 
 constexpr VersionData SLES02914_DATA = {
@@ -99,6 +118,7 @@ constexpr VersionData SLES02914_DATA = {
     .nameOffset = PSEXE_OFFSET(0x13ac0c),
     .paraOffset = PSEXE_OFFSET(0x138b5c),
     .skelOffset = PSEXE_OFFSET(0x122dd4),
+    .isPAL      = true,
 };
 
 constexpr VersionData SLES03434_DATA = {
@@ -107,6 +127,7 @@ constexpr VersionData SLES03434_DATA = {
     .nameOffset = PSEXE_OFFSET(0x13ae00),
     .paraOffset = PSEXE_OFFSET(0x138d50),
     .skelOffset = PSEXE_OFFSET(0x122de4),
+    .isPAL      = true,
 };
 
 constexpr VersionData SLES03435_DATA = {
@@ -115,6 +136,7 @@ constexpr VersionData SLES03435_DATA = {
     .nameOffset = PSEXE_OFFSET(0x13add8),
     .paraOffset = PSEXE_OFFSET(0x138d28),
     .skelOffset = PSEXE_OFFSET(0x122d6c),
+    .isPAL      = true,
 };
 
 constexpr VersionData SLES03436_DATA = {
@@ -123,6 +145,7 @@ constexpr VersionData SLES03436_DATA = {
     .nameOffset = PSEXE_OFFSET(0x13b7e4),
     .paraOffset = PSEXE_OFFSET(0x139734),
     .skelOffset = PSEXE_OFFSET(0x122da0),
+    .isPAL      = true,
 };
 
 constexpr VersionData SLES03437_DATA = {
@@ -131,6 +154,7 @@ constexpr VersionData SLES03437_DATA = {
     .nameOffset = PSEXE_OFFSET(0x13b314),
     .paraOffset = PSEXE_OFFSET(0x139264),
     .skelOffset = PSEXE_OFFSET(0x122da0),
+    .isPAL      = true,
 };
 
 constexpr VersionData VERSION_DATA[] = { SLUS_DATA,      SLPS_11_DATA,   SLPS_10_DATA,   SLPM_DATA,     SLES02914_DATA,
@@ -177,17 +201,18 @@ std::vector<Entry> loadDigimonEntries(std::filesystem::path parentPath)
     std::vector<MMDTexture> textureData = readFileAsVector<MMDTexture>(parentPath / version.alltimPath);
     DigimonFileName* names              = reinterpret_cast<DigimonFileName*>(data.data() + version.nameOffset);
     DigimonPara* para                   = reinterpret_cast<DigimonPara*>(data.data() + version.paraOffset);
+    DigimonParaPAL* paraPAL             = reinterpret_cast<DigimonParaPAL*>(data.data() + version.paraOffset);
     uint32_t* skelOffset                = reinterpret_cast<uint32_t*>(data.data() + version.skelOffset);
 
     for (int i = 0; i < 180; i++)
     {
         NodeEntry* skeletonOffset = reinterpret_cast<NodeEntry*>(data.data() + skelOffset[i] - 0x80090000);
+        int32_t boneCount         = version.isPAL ? paraPAL[i].boneCount : para[i].boneCount;
 
         Entry entry;
         entry.filename = std::string(names[i]);
-        entry.para     = para[i];
 
-        for (int32_t j = 0; j < entry.para.boneCount; j++)
+        for (int32_t j = 0; j < boneCount; j++)
             entry.skeleton.push_back(skeletonOffset[j]);
 
         std::copy(textureData[i].buffer, textureData[i].buffer + sizeof(MMDTexture), std::back_inserter(entry.texture));
