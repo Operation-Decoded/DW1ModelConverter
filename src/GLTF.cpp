@@ -5,7 +5,6 @@
 
 #include "GLTF.hpp"
 
-#include <format>
 #include <numbers>
 
 struct Quaternion
@@ -18,12 +17,12 @@ struct Quaternion
     Quaternion() = default;
     Quaternion(FVector angles)
     {
-        double c1 = std::cos((angles.x * std::numbers::pi / 180.0f) * 0.5);
-        double s1 = std::sin((angles.x * std::numbers::pi / 180.0f) * 0.5);
-        double c2 = std::cos((angles.y * std::numbers::pi / 180.0f) * 0.5);
-        double s2 = std::sin((angles.y * std::numbers::pi / 180.0f) * 0.5);
-        double c3 = std::cos((angles.z * std::numbers::pi / 180.0f) * 0.5);
-        double s3 = std::sin((angles.z * std::numbers::pi / 180.0f) * 0.5);
+        float c1 = std::cos((angles.x * std::numbers::pi / 180.0f) * 0.5f);
+        float s1 = std::sin((angles.x * std::numbers::pi / 180.0f) * 0.5f);
+        float c2 = std::cos((angles.y * std::numbers::pi / 180.0f) * 0.5f);
+        float s2 = std::sin((angles.y * std::numbers::pi / 180.0f) * 0.5f);
+        float c3 = std::cos((angles.z * std::numbers::pi / 180.0f) * 0.5f);
+        float s3 = std::sin((angles.z * std::numbers::pi / 180.0f) * 0.5f);
 
         this->w = c1 * c2 * c3 - s1 * s2 * s3;
         this->x = s1 * c2 * c3 + c1 * s2 * s3;
@@ -267,8 +266,13 @@ void GLTFExporter::buildSkeletonScene()
 
     for (auto& mmdNode : mmd.skeleton)
     {
+        // TODO: replace with std::format when GCC13 becomes available on Linux runners
+        // std::format("node-{}", model.nodes.size())
+        std::stringstream nodeName;
+        nodeName << "node-" << model.nodes.size();
+
         tinygltf::Node node;
-        node.name = std::format("node-{}", model.nodes.size());
+        node.name = nodeName.str();
 
         if (mmdNode.object != 255)
         {
@@ -369,11 +373,14 @@ int32_t GLTFExporter::buildMaterial(MaterialMode mode)
 
 void GLTFExporter::buildAnimations()
 {
+    int i = 0; 
     for (auto& raw : mmd.anims->anims)
     {
         Animation data(raw);
         tinygltf::Animation anim;
         int nodeId = 0;
+
+        std::cout << i++ << std::endl;
 
         for (auto a : data.getData())
         {

@@ -40,10 +40,6 @@ void CLUTMap::updateBlocks()
 
 void CLUTMap::applyModel(Model& model)
 {
-    auto texturePage = model.getTexturePage();
-    auto clutX       = model.getClutX();
-    auto clutY       = model.getClutY();
-
     for (auto& mesh : model.meshes)
         for (const Face& face : mesh.faces)
         {

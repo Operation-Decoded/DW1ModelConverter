@@ -234,7 +234,6 @@ MMDAnimation::MMDAnimation(ReadBuffer& buffer, std::size_t boneCount)
         {
             case 0x0000: // keyframe
             {
-                uint16_t timeCode = instruction & 0xFFF;
                 instructions.emplace_back(new KeyframeInstruction(instruction, buffer));
                 break;
             }

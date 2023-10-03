@@ -3,7 +3,6 @@
 #include "TIM.hpp"
 
 #include <filesystem>
-#include <format>
 #include <fstream>
 #include <iostream>
 
@@ -227,11 +226,16 @@ int main(int count, char* args[])
 
     for (Entry& entry : entries)
     {
-        std::filesystem::path modelPath = dataPath / std::format("CHDAT/MMD{}/{}.MMD", id++ / 30, entry.filename);
+        std::stringstream mmdPath;
+        mmdPath << "CHDAT/MMD" << (id++ / 30) << "/" << entry.filename << ".MMD";
+
+        // TODO: replace with std::format when GCC13 becomes available on Linux runners
+        // std::format("CHDAT/MMD{}/{}.MMD", id++ / 30, entry.filename)
+        std::filesystem::path modelPath = dataPath / mmdPath.str();
 
         if (!std::filesystem::exists(modelPath))
         {
-            std::cout << "File " << modelPath << "does not exist, skipping." << std::endl;
+            std::cout << "File " << modelPath << " does not exist, skipping." << std::endl;
             continue;
         }
 
@@ -239,7 +243,12 @@ int main(int count, char* args[])
         AbstractTIM tim(entry.texture);
         GLTFExporter gltf(model, tim);
 
-        bool success = gltf.save(std::format("output/{}.gltf", entry.filename));
+        // TODO: replace with std::format when GCC13 becomes available on Linux runners
+        // std::format("output/{}.gltf", entry.filename)
+        std::stringstream outputPath;
+        outputPath << "output/" << entry.filename << ".gltf";
+
+        bool success = gltf.save(outputPath.str());
         if (success)
             std::cout << "Written " << entry.filename << std::endl;
         else
