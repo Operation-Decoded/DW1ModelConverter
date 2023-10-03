@@ -5,7 +5,18 @@
 
 #include "GLTF.hpp"
 
+#include <iostream>
 #include <numbers>
+
+constexpr bool hasValidNormals(Mesh& mesh, Face& face)
+{
+    const std::size_t size = mesh.normals.size();
+
+    if (face.n1 >= size) return false;
+    if (face.n2 >= size) return false;
+    if (face.n3 >= size) return false;
+    return true;
+}
 
 struct Quaternion
 {
@@ -169,9 +180,19 @@ std::size_t GLTFExporter::buildPrimitiveNormal(Mesh& mesh, std::vector<Face> fac
 
     for (auto& face : faces)
     {
-        data.push_back(mesh.normals[face.n1]);
-        data.push_back(mesh.normals[face.n2]);
-        data.push_back(mesh.normals[face.n3]);
+        if (hasValidNormals(mesh, face))
+        {
+            data.push_back(mesh.normals[face.n1]);
+            data.push_back(mesh.normals[face.n2]);
+            data.push_back(mesh.normals[face.n3]);
+        }
+        else
+        {
+            data.push_back({ 0.0f, 1.0f, 0.0f });
+            data.push_back({ 0.0f, 1.0f, 0.0f });
+            data.push_back({ 0.0f, 1.0f, 0.0f });
+            std::cout << "Source model contains invalid normal data, using empty fallback values." << std::endl;
+        }
     }
 
     return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3, TINYGLTF_TARGET_ARRAY_BUFFER);
@@ -373,7 +394,7 @@ int32_t GLTFExporter::buildMaterial(MaterialMode mode)
 
 void GLTFExporter::buildAnimations()
 {
-    int i = 0; 
+    int i = 0;
     for (auto& raw : mmd.anims->anims)
     {
         Animation data(raw);
