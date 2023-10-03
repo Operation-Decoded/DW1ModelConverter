@@ -1,0 +1,70 @@
+name: "Build DW1ModelConverter"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          vsversion: 2022
+
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/_deps
+          key: CPM Dependencies Win x64
+
+      - name: Build
+        run: |
+          cmake . -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+
+      - name: Copy Binary
+        run: copy ${{ github.workspace }}/Release/DW1ModelConverter.exe ${{ github.workspace }}/DW1ModelConverter.exe
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: win-x64
+          path: | 
+            ${{ github.workspace }}/DW1ModelConverter.exe
+            ${{ github.workspace }}/README.md
+            ${{ github.workspace }}/LICENSE
+            ${{ github.workspace }}/THIRD-PARTY-NOTICE
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/_deps
+          key: CPM Dependencies Linux x64
+
+      - name: Build
+        run: |
+          cmake . -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-x64
+          path: |
+            ${{ github.workspace }}/DW1ModelConverter
+            ${{ github.workspace }}/README.md
+            ${{ github.workspace }}/LICENSE
+            ${{ github.workspace }}/THIRD-PARTY-NOTICE

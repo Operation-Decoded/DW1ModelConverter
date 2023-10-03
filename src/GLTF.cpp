@@ -8,9 +8,9 @@
 #include <iostream>
 #include <numbers>
 
-constexpr bool hasValidNormals(Mesh& mesh, Face& face)
+bool hasValidNormals(Mesh& mesh, Face& face)
 {
-    const std::size_t size = mesh.normals.size();
+    std::size_t size = mesh.normals.size();
 
     if (face.n1 >= size) return false;
     if (face.n2 >= size) return false;
