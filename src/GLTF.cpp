@@ -157,7 +157,7 @@ template<> TexCoord myMax(TexCoord& a, TexCoord& b)
 void GLTFExporter::buildAssetEntry()
 {
     model.asset.version   = "2.0";
-    model.asset.generator = "DW1ModelConverter v1.0";
+    model.asset.generator = "DW1ModelConverter v1.1";
 }
 
 std::size_t GLTFExporter::buildPrimitiveVertex(Mesh& mesh, std::vector<Face> faces)
@@ -374,13 +374,22 @@ int32_t GLTFExporter::buildMaterial(MaterialMode mode)
 
     mat.doubleSided = mode.isDoubleSided;
     if (!mode.hasTranslucency)
-        mat.alphaMode = "OPAQUE";
+    {
+        mat.alphaMode = "MASK";
+        mat.alphaCutoff = 0.1f;
+    }
     else
     {
         tinygltf::Value::Object extras;
         extras.emplace("blendMode", std::to_string(mode.mixtureRate));
         mat.extras    = tinygltf::Value(extras);
         mat.alphaMode = "BLEND";
+    }
+    
+    if(mode.type == MaterialType::NO_LIGHT)
+    {   
+        tinygltf::Value unlit;
+        mat.extensions["KHR_materials_unlit"] = unlit;
     }
 
     mat.pbrMetallicRoughness.baseColorFactor = { 1.0f, 1.0f, 1.0f, 1.0f };
