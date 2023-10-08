@@ -126,8 +126,8 @@ struct TexCoord
 
     TexCoord(UVCoord uv, const std::pair<uint32_t, uint32_t> size)
     {
-        u = (float)uv.u / size.first;
-        v = (float)uv.v / size.second;
+        u = ((float)uv.u / size.first) + 0.0001f;
+        v = ((float)uv.v / size.second) + 0.0001f;
     }
 
     friend std::ostream& operator<<(std::ostream& stream, const TexCoord& tex)
