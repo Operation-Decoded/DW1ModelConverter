@@ -43,7 +43,7 @@ Animation::Animation(const MMDAnimation& anim)
         mtnFrame++;
         keyFrame++;
         keyFrameTime = (keyFrame - 1) / 20.0f;
-    } while (mtnFrame < anim.frameCount);
+    } while (mtnFrame <= anim.frameCount);
 
     for (uint32_t node = 0; node < momentumData.size(); node++)
     {
@@ -102,8 +102,6 @@ bool KeyframeInstruction::run(Animation& anim)
 
 bool LoopStartInstruction::run(Animation& anim)
 {
-    if (loopCount == 0 || loopCount == 0xFF) anim.endlessStart = anim.keyFrameTime;
-
     anim.jumpbackIndex = anim.currentIndex;
     anim.loopCount     = loopCount;
 
@@ -116,7 +114,12 @@ bool LoopEndInstruction::run(Animation& anim)
     if (anim.mtnFrame != timecode) return false;
 
     // endless loop, animation ends here
-    if (anim.loopCount == 0xFF || anim.loopCount == 0x00) return true;
+    if (anim.loopCount == 0xFF || anim.loopCount == 0x00)
+    {
+        anim.endlessEnd   = (timecode - 1) / 20.0f;
+        anim.endlessStart = (newTime - 1) / 20.0f;
+        return true;
+    }
 
     anim.mtnFrame = newTime;
     anim.loopCount--;
@@ -197,7 +200,8 @@ void TextureInstruction::handleTexture(CLUTMap& clutMap)
     }
 }
 
-MMDAnimation::MMDAnimation(ReadBuffer& buffer, std::size_t boneCount)
+MMDAnimation::MMDAnimation(uint32_t id, ReadBuffer& buffer, std::size_t boneCount)
+    : id(id)
 {
     frameCount    = buffer.read<uint16_t>();
     bool hasScale = frameCount & 0x8000;
@@ -269,20 +273,23 @@ MMDAnimations::MMDAnimations(ReadBuffer& buffer, std::size_t boneCount)
     for (uint32_t i = 0; i < animCount; i++)
         animOffsets.push_back(buffer.read<uint32_t>());
 
-    for (auto a : animOffsets)
+    for (uint32_t i = 0; i < animCount; i++)
     {
+        auto a = animOffsets[i];
+
         if (a == 0)
-            anims.emplace_back();
+            anims.emplace_back(i);
         else
         {
             buffer.setPosition(a);
-            anims.emplace_back(buffer, boneCount);
+            anims.emplace_back(i, buffer, boneCount);
         }
     }
 }
 
 MMDAnimations::MMDAnimations() {}
-MMDAnimation::MMDAnimation()
-    : frameCount(0)
+MMDAnimation::MMDAnimation(uint32_t id)
+    : id(id)
+    , frameCount(0)
 {
 }

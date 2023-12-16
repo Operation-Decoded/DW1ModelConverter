@@ -122,11 +122,12 @@ class MMDAnimation
 {
 public:
     uint32_t frameCount;
+    uint32_t id;
     std::vector<Position> initialPositions;
     std::vector<std::unique_ptr<Instruction>> instructions;
 
-    MMDAnimation(ReadBuffer& buffer, std::size_t boneCount);
-    MMDAnimation();
+    MMDAnimation(uint32_t id, ReadBuffer& buffer, std::size_t boneCount);
+    MMDAnimation(uint32_t id);
 };
 
 class MMDAnimations
@@ -191,6 +192,8 @@ private:
 public:
     // start of endless looping, as time code
     float endlessStart = -1;
+    // time code where the endless loop ends (-> jumps back)
+    float endlessEnd = -1;
     std::vector<SoundAnimation> sound;
     std::vector<TextureAnimation> texture;
 

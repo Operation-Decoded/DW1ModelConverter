@@ -157,7 +157,7 @@ template<> TexCoord myMax(TexCoord& a, TexCoord& b)
 void GLTFExporter::buildAssetEntry()
 {
     model.asset.version   = "2.0";
-    model.asset.generator = "DW1ModelConverter v1.1";
+    model.asset.generator = "DW1ModelConverter v1.2";
 }
 
 std::size_t GLTFExporter::buildPrimitiveVertex(Mesh& mesh, std::vector<Face> faces)
@@ -282,7 +282,7 @@ void GLTFExporter::buildSkeletonScene()
 {
     tinygltf::Scene scene;
     tinygltf::Skin skin;
-    skin.skeleton = 1;
+    skin.skeleton = 0;
     auto skinId   = push(model.skins, skin);
 
     for (auto& mmdNode : mmd.skeleton)
@@ -320,7 +320,7 @@ void GLTFExporter::buildSkeletonScene()
         else
             scene.nodes.push_back(id);
 
-        if (id > 0) model.skins[skinId].joints.push_back(id);
+        model.skins[skinId].joints.push_back(id);
     }
 
     model.defaultScene = push(model.scenes, scene);
@@ -375,7 +375,7 @@ int32_t GLTFExporter::buildMaterial(MaterialMode mode)
     mat.doubleSided = mode.isDoubleSided;
     if (!mode.hasTranslucency)
     {
-        mat.alphaMode = "MASK";
+        mat.alphaMode   = "MASK";
         mat.alphaCutoff = 0.1f;
     }
     else
@@ -385,9 +385,9 @@ int32_t GLTFExporter::buildMaterial(MaterialMode mode)
         mat.extras    = tinygltf::Value(extras);
         mat.alphaMode = "BLEND";
     }
-    
-    if(mode.type == MaterialType::NO_LIGHT)
-    {   
+
+    if (mode.type == MaterialType::NO_LIGHT)
+    {
         tinygltf::Value unlit;
         mat.extensions["KHR_materials_unlit"] = unlit;
     }
@@ -408,6 +408,12 @@ void GLTFExporter::buildAnimations()
     {
         Animation data(raw);
         tinygltf::Animation anim;
+
+        // TODO: replace with std::format when GCC13 becomes available on Linux runners
+        // std::format("anim-{}", raw.id)
+        std::stringstream animName;
+        animName << "anim-" << raw.id;
+        anim.name  = animName.str();
         int nodeId = 0;
 
         for (auto a : data.getData())
@@ -522,7 +528,11 @@ void GLTFExporter::buildAnimations()
             textureArray.emplace_back(texture);
         }
 
-        if (data.endlessStart != -1) extras.emplace("endlessStart", std::to_string(data.endlessStart));
+        if (data.endlessStart != -1)
+        {
+            extras.emplace("endlessStart", std::to_string(data.endlessStart));
+            extras.emplace("endlessEnd", std::to_string(data.endlessEnd));
+        }
         if (!data.sound.empty()) extras.emplace("sounds", soundArray);
         if (!data.texture.empty()) extras.emplace("textures", textureArray);
         anim.extras = tinygltf::Value(extras);
