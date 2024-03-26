@@ -57,7 +57,7 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 
 CPMAddPackage(
   NAME nlohmann_json
-  VERSION 3.9.1
+  VERSION 3.11.3
   GITHUB_REPOSITORY "nlohmann/json"
 )
 
