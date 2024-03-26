@@ -3,6 +3,7 @@
 #include "TIM.hpp"
 
 #include <tiny_gltf.h>
+#include <optional>
 
 struct ColorRGB
 {
@@ -48,9 +49,10 @@ class GLTFExporter
 private:
     tinygltf::Model model;
 
-    Model& mmd;
-    AbstractTIM& tim;
+    const Model& mmd;
+    const AbstractTIM& tim;
     std::map<MaterialMode, int32_t> materialMapping;
+    std::optional<TIMPalette> forcedPalette;
 
 private:
     void buildAssetEntry();
@@ -63,14 +65,14 @@ private:
     template<typename T> std::size_t buildAccessor(std::vector<T> data, int componentType, int type, int target);
 
     int32_t buildMaterial(MaterialMode mode);
-    tinygltf::Primitive buildPrimitive(Mesh& mesh, MaterialMode material, std::vector<Face> faces);
-    std::size_t buildPrimitiveVertex(Mesh& mesh, std::vector<Face> faces);
-    std::size_t buildPrimitiveNormal(Mesh& mesh, std::vector<Face> faces);
+    tinygltf::Primitive buildPrimitive(const Mesh& mesh, MaterialMode material, std::vector<Face> faces);
+    std::size_t buildPrimitiveVertex(const Mesh& mesh, std::vector<Face> faces);
+    std::size_t buildPrimitiveNormal(const Mesh& mesh, std::vector<Face> faces);
     std::size_t buildPrimitiveColor(std::vector<Face> faces);
     std::size_t buildPrimitiveTexcoord(std::vector<Face> faces);
 
 public:
-    GLTFExporter(Model& model, AbstractTIM& tim);
+    GLTFExporter(const Model& model, const AbstractTIM& tim, std::optional<TIMPalette> forcedPalette = {});
 
     bool save(const std::string& filename);
 };

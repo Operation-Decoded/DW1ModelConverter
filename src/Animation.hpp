@@ -64,7 +64,7 @@ struct KeyframeEntry
 
 class KeyframeInstruction : public Instruction
 {
-    uint32_t timecode;
+uint32_t timecode;
     std::vector<KeyframeEntry> entries;
 
 public:
@@ -124,7 +124,7 @@ public:
     uint32_t frameCount;
     uint32_t id;
     std::vector<Position> initialPositions;
-    std::vector<std::unique_ptr<Instruction>> instructions;
+    std::vector<std::shared_ptr<Instruction>> instructions;
 
     MMDAnimation(uint32_t id, ReadBuffer& buffer, std::size_t boneCount);
     MMDAnimation(uint32_t id);

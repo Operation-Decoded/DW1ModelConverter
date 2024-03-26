@@ -29,5 +29,5 @@ public:
     CLUTMapImage& at(uint32_t id);
     CLUTMapImage& operator[](uint32_t id);
     void updateBlocks();
-    void applyModel(Model& model);
+    void applyModel(const Model& model);
 };

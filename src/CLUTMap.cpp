@@ -38,7 +38,7 @@ void CLUTMap::updateBlocks()
             }
 }
 
-void CLUTMap::applyModel(Model& model)
+void CLUTMap::applyModel(const Model& model)
 {
     for (auto& mesh : model.meshes)
         for (const Face& face : mesh.faces)
@@ -54,10 +54,9 @@ void CLUTMap::applyModel(Model& model)
             page.draw_triangle(face.uv1.u, face.uv1.v, face.uv2.u, face.uv2.v, face.uv3.u, face.uv3.v, &clutCoords.u32);
         }
 
-    if (model.anims)
-        for (auto& anim : model.anims->anims)
-            for (auto& instr : anim.instructions)
-                instr->handleTexture(*this);
+    for (auto& anim : model.anims.anims)
+        for (auto& instr : anim.instructions)
+            instr->handleTexture(*this);
 
     updateBlocks();
 }

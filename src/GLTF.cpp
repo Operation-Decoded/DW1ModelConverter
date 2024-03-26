@@ -5,10 +5,11 @@
 
 #include "GLTF.hpp"
 
+#include <format>
 #include <iostream>
 #include <numbers>
 
-bool hasValidNormals(Mesh& mesh, Face& face)
+bool hasValidNormals(const Mesh& mesh, const Face& face)
 {
     std::size_t size = mesh.normals.size();
 
@@ -157,10 +158,10 @@ template<> TexCoord myMax(TexCoord& a, TexCoord& b)
 void GLTFExporter::buildAssetEntry()
 {
     model.asset.version   = "2.0";
-    model.asset.generator = "DW1ModelConverter v1.2";
+    model.asset.generator = std::format("{} v{}", PROJECT_NAME, PROJECT_VERSION);
 }
 
-std::size_t GLTFExporter::buildPrimitiveVertex(Mesh& mesh, std::vector<Face> faces)
+std::size_t GLTFExporter::buildPrimitiveVertex(const Mesh& mesh, std::vector<Face> faces)
 {
     std::vector<FVector> data;
 
@@ -174,7 +175,7 @@ std::size_t GLTFExporter::buildPrimitiveVertex(Mesh& mesh, std::vector<Face> fac
     return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3, TINYGLTF_TARGET_ARRAY_BUFFER);
 }
 
-std::size_t GLTFExporter::buildPrimitiveNormal(Mesh& mesh, std::vector<Face> faces)
+std::size_t GLTFExporter::buildPrimitiveNormal(const Mesh& mesh, std::vector<Face> faces)
 {
     std::vector<FVector> data;
 
@@ -218,9 +219,10 @@ std::size_t GLTFExporter::buildPrimitiveTexcoord(std::vector<Face> faces)
 
     for (auto& face : faces)
     {
-        data.push_back(TexCoord(face.uv1, tim.getSize()));
-        data.push_back(TexCoord(face.uv2, tim.getSize()));
-        data.push_back(TexCoord(face.uv3, tim.getSize()));
+        auto offset = (face.texturePage - tim.getPixelX() / 64) * (64 * 16 / tim.getBitPerPixel());
+        data.push_back(TexCoord(face.uv1.u + offset, face.uv1.v, tim.getSize()));
+        data.push_back(TexCoord(face.uv2.u + offset, face.uv2.v, tim.getSize()));
+        data.push_back(TexCoord(face.uv3.u + offset, face.uv3.v, tim.getSize()));
     }
 
     return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC2, TINYGLTF_TARGET_ARRAY_BUFFER);
@@ -263,7 +265,7 @@ std::size_t GLTFExporter::buildAccessor(std::vector<T> data, int componentType, 
     return push(model.accessors, accessor);
 }
 
-tinygltf::Primitive GLTFExporter::buildPrimitive(Mesh& mesh, MaterialMode material, std::vector<Face> faces)
+tinygltf::Primitive GLTFExporter::buildPrimitive(const Mesh& mesh, MaterialMode material, std::vector<Face> faces)
 {
     tinygltf::Primitive prim;
 
@@ -287,13 +289,8 @@ void GLTFExporter::buildSkeletonScene()
 
     for (auto& mmdNode : mmd.skeleton)
     {
-        // TODO: replace with std::format when GCC13 becomes available on Linux runners
-        // std::format("node-{}", model.nodes.size())
-        std::stringstream nodeName;
-        nodeName << "node-" << model.nodes.size();
-
         tinygltf::Node node;
-        node.name = nodeName.str();
+        node.name = std::format("node-{}", model.nodes.size());
 
         if (mmdNode.object != 255)
         {
@@ -330,7 +327,7 @@ void GLTFExporter::buildStaticScene()
 {
     tinygltf::Scene scene;
 
-    for (Mesh& mesh : mmd.meshes)
+    for (const Mesh& mesh : mmd.meshes)
     {
         tinygltf::Mesh lMesh;
         std::map<MaterialMode, std::vector<Face>> faceMap;
@@ -393,27 +390,22 @@ int32_t GLTFExporter::buildMaterial(MaterialMode mode)
     }
 
     mat.pbrMetallicRoughness.baseColorFactor = { 1.0f, 1.0f, 1.0f, 1.0f };
+    mat.pbrMetallicRoughness.metallicFactor = 0.0f;
     if (mode.type != MaterialType::COLOR) mat.pbrMetallicRoughness.baseColorTexture.index = 0;
     auto id               = push(model.materials, mat);
     materialMapping[mode] = id;
     return id;
 }
 
-#include <iostream>
-
 void GLTFExporter::buildAnimations()
 {
     int i = 0;
-    for (auto& raw : mmd.anims->anims)
+    for (auto& raw : mmd.anims.anims)
     {
         Animation data(raw);
         tinygltf::Animation anim;
+        anim.name = std::format("anim-{}", raw.id);
 
-        // TODO: replace with std::format when GCC13 becomes available on Linux runners
-        // std::format("anim-{}", raw.id)
-        std::stringstream animName;
-        animName << "anim-" << raw.id;
-        anim.name  = animName.str();
         int nodeId = 0;
 
         for (auto a : data.getData())
@@ -551,10 +543,13 @@ void GLTFExporter::buildTexture()
     image.bits       = 8;
     image.component  = 4;
     image.pixel_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
-    image.image      = tim.getImage(map);
-    image.width      = tim.getSize().first;
-    image.height     = tim.getSize().second;
-    image.name       = "texture";
+    if (forcedPalette)
+        image.image = tim.getRawImage(*forcedPalette);
+    else
+        image.image = tim.getRawImage(map);
+    image.width  = tim.getSize().first;
+    image.height = tim.getSize().second;
+    image.name   = "texture";
 
     tinygltf::Sampler sampler;
     sampler.magFilter = TINYGLTF_TEXTURE_FILTER_NEAREST;
@@ -567,9 +562,10 @@ void GLTFExporter::buildTexture()
     push(model.textures, tex);
 }
 
-GLTFExporter::GLTFExporter(Model& mmd, AbstractTIM& tim)
+GLTFExporter::GLTFExporter(const Model& mmd, const AbstractTIM& tim, std::optional<TIMPalette> forcedPalette)
     : mmd(mmd)
     , tim(tim)
+    , forcedPalette(forcedPalette)
 {
     buildAssetEntry();
     buildMeshEntries();

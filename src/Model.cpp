@@ -137,10 +137,10 @@ void Model::loadTMD(TMD& tmd)
     {
         Mesh mesh;
 
-        TMDObject& obj    = tmd.objects[i];
-        SVector* vertices = reinterpret_cast<SVector*>(reinterpret_cast<uint8_t*>(&(tmd.objects)) + obj.vert_top);
-        SVector* normals  = reinterpret_cast<SVector*>(reinterpret_cast<uint8_t*>(&(tmd.objects)) + obj.normal_top);
-        char* primitives  = reinterpret_cast<char*>(&(tmd.objects)) + obj.primitive_top;
+        TMDObject& obj      = tmd.objects[i];
+        SVector* vertices   = reinterpret_cast<SVector*>(reinterpret_cast<uint8_t*>(&(tmd.objects)) + obj.vert_top);
+        SVector* normals    = reinterpret_cast<SVector*>(reinterpret_cast<uint8_t*>(&(tmd.objects)) + obj.normal_top);
+        uint8_t* primitives = reinterpret_cast<uint8_t*>(&(tmd.objects)) + obj.primitive_top;
 
         for (uint32_t j = 0; j < obj.n_vert; j++)
             mesh.vertices.push_back(vertices[j]);
@@ -251,14 +251,10 @@ void Model::loadTMD(TMD& tmd)
     }
 }
 
-Model::Model(filepath mesh, std::vector<NodeEntry> nodes) : skeleton(nodes), name(mesh.filename().string())
+Model::Model(filepath mesh, std::vector<NodeEntry> nodes)
+    : skeleton(nodes)
+    , name(mesh.filename().string())
 {
-    loadMesh(mesh);
-}
-
-Model::Model(filepath mesh, std::optional<filepath> nodes) : name(mesh.filename().string())
-{
-    if (nodes) loadNodes(nodes.value()); // load nodes before mesh, since animations need to know about the bone count
     loadMesh(mesh);
 }
 
@@ -269,12 +265,12 @@ void Model::loadMesh(filepath path)
     std::streamoff length = std::filesystem::file_size(path);
     std::ifstream input(path, std::ios::binary);
 
-    std::vector<char> buffer;
+    std::vector<uint8_t> buffer;
     buffer.resize(length);
-    input.read(buffer.data(), length);
+    input.read(reinterpret_cast<char*>(buffer.data()), length);
 
-    TMD* tmdPtr  = reinterpret_cast<TMD*>(buffer.data());
-    char* mtnPtr = NULL;
+    TMD* tmdPtr     = reinterpret_cast<TMD*>(buffer.data());
+    uint8_t* mtnPtr = NULL;
 
     if (!path.extension().compare(".MMD"))
     {
@@ -288,25 +284,21 @@ void Model::loadMesh(filepath path)
     if (mtnPtr != NULL && skeleton.size() != 0)
     {
         ReadBuffer b(mtnPtr);
-        anims = std::make_unique<MMDAnimations>(b, skeleton.size());
+        anims = MMDAnimations(b, skeleton.size());
     }
     else
-        anims = std::make_unique<MMDAnimations>();
+        anims = MMDAnimations();
 }
 
 uint32_t Model::getTexturePage() const
 {
-    uint32_t page    = -1;
-    uint32_t maxPage = 0;
+    uint32_t page = -1;
 
     for (auto& mesh : meshes)
         for (auto& face : mesh.faces)
         {
             if (!face.hasTexture) continue;
-
             if (face.texturePage < page) page = face.texturePage;
-
-            if (face.texturePage > maxPage) maxPage = face.texturePage;
         }
 
     return page;

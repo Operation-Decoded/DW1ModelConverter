@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(DW1ModelConverter)
+project(DW1ModelConverter VERSION 1.2.0)
 
 include(cmake/CPM.cmake)
 
@@ -52,20 +52,34 @@ CPMAddPackage(
   GITHUB_REPOSITORY "GreycLab/CImg"
 )
 
+# nlohmann_json
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+
+CPMAddPackage(
+  NAME nlohmann_json
+  VERSION 3.9.1
+  GITHUB_REPOSITORY "nlohmann/json"
+)
+
 # re-enable deprecation warning
 set(CMAKE_WARN_DEPRECATED TRUE CACHE BOOL "" FORCE)
 
 # --- Target ---
 set(SOURCE_FILES ${SOURCE_FILES} "src/main.cpp" "src/TIM.cpp" "src/Animation.cpp" "src/CLUTMap.cpp" 
-                                 "src/Model.cpp" "src/GLTF.cpp")
+                                 "src/Model.cpp" "src/GLTF.cpp" "src/MAP.cpp")
 
 add_executable(DW1ModelConverter ${SOURCE_FILES})
 
 set_target_properties(DW1ModelConverter PROPERTIES CXX_STANDARD 20)
-target_include_directories(DW1ModelConverter PRIVATE ${cimg_SOURCE_DIR} ${libpng_SOURCE_DIR} ${libpng_BINARY_DIR})
+target_include_directories(DW1ModelConverter PRIVATE ${cimg_SOURCE_DIR} ${libpng_SOURCE_DIR} ${libpng_BINARY_DIR} nlohmann_json::nlohmann_json)
 target_link_libraries(DW1ModelConverter PRIVATE png_static tinygltf)
 
 target_compile_definitions(DW1ModelConverter PRIVATE cimg_display=0)
 target_compile_definitions(DW1ModelConverter PRIVATE cimg_use_png)
+target_compile_definitions(DW1ModelConverter PRIVATE PROJECT_NAME="${PROJECT_NAME}")
+target_compile_definitions(DW1ModelConverter PRIVATE PROJECT_VERSION="v${PROJECT_VERSION}")
+target_compile_definitions(DW1ModelConverter PRIVATE PROJECT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
+target_compile_definitions(DW1ModelConverter PRIVATE PROJECT_VERSION_MINOR=${PROJECT_VERSION_MINOR})
+target_compile_definitions(DW1ModelConverter PRIVATE PROJECT_VERSION_PATCH=${PROJECT_VERSION_PATCH})
 
 install(TARGETS DW1ModelConverter)

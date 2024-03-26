@@ -5,7 +5,6 @@
 #include <stdint.h>
 
 #include <filesystem>
-#include <optional>
 #include <vector>
 
 struct TMDObject
@@ -80,7 +79,7 @@ struct SVector
     int16_t z;
     int16_t pad; // can also be boneId
 
-    FVector convertToFixedPoint(uint32_t decimalBits)
+    FVector convertToFixedPoint(uint32_t decimalBits) const
     {
         float scale = 1.0f / (1 << decimalBits);
         return { x * scale, y * scale, z * scale };
@@ -111,6 +110,12 @@ struct UVCoord
 {
     uint8_t u;
     uint8_t v;
+
+    friend std::ostream& operator<<(std::ostream& stream, const UVCoord& tex)
+    {
+        stream << std::to_string(tex.u) << " " << std::to_string(tex.v);
+        return stream;
+    }
 };
 
 struct TexCoord
@@ -122,6 +127,12 @@ struct TexCoord
     {
         u = 0;
         v = 0;
+    }
+
+    TexCoord(uint32_t u, uint32_t v, const std::pair<uint32_t, uint32_t> size)
+    {
+        this->u = ((float)u / size.first) + 0.0001f;
+        this->v = ((float)v / size.second) + 0.0001f;
     }
 
     TexCoord(UVCoord uv, const std::pair<uint32_t, uint32_t> size)
@@ -266,7 +277,7 @@ private:
 public:
     std::string name;
     std::vector<Mesh> meshes;
-    std::unique_ptr<MMDAnimations> anims;
+    MMDAnimations anims;
     std::vector<NodeEntry> skeleton;
 
 public:
@@ -274,8 +285,9 @@ public:
     uint32_t getClutX() const;
     uint32_t getClutY() const;
 
-    Model(filepath mesh, std::optional<filepath> nodes = {});
     Model(filepath mesh, std::vector<NodeEntry> nodes = {});
+
+
 };
 
 /*

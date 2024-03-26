@@ -1,8 +1,10 @@
 #include "GLTF.hpp"
+#include "MAP.hpp"
 #include "Model.hpp"
 #include "TIM.hpp"
 
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
 
@@ -46,6 +48,10 @@ struct VersionData
     uint32_t nameOffset;
     uint32_t paraOffset;
     uint32_t skelOffset;
+    uint32_t mapEntryOffset;
+    uint32_t mapNamePtrOffset;
+    uint32_t toiletDataOffset;
+    uint32_t doorDataOffset;
     bool isPAL;
 };
 
@@ -54,13 +60,14 @@ struct MMDTexture
     uint8_t buffer[0x4800];
 };
 
-struct Entry
+struct DigimonEntry
 {
     std::string filename;
     std::vector<NodeEntry> skeleton;
     std::vector<uint8_t> texture;
 };
 
+// TODO map entry data
 // data
 /*
  *                  name     para     skel
@@ -74,15 +81,19 @@ struct Entry
  * SLES_034.36  0x13B7E4 0x139734 0x122DA0
  * SLES_034.37  0x13B314 0x139264 0x122DA0
  */
-constexpr uint32_t PSEXE_OFFSET(uint32_t offset) { return offset - 0x90000; }
+constexpr uint32_t PSEXE_OFFSET(uint32_t offset) { return (offset - 0x90000) & 0x7FFFFFFF; }
 
 constexpr VersionData SLUS_DATA = {
-    .psexePath  = "SLUS_010.32",
-    .alltimPath = "CHDAT/ALLTIM.TIM",
-    .nameOffset = PSEXE_OFFSET(0x133b44),
-    .paraOffset = PSEXE_OFFSET(0x12ceb4),
-    .skelOffset = PSEXE_OFFSET(0x11ce60),
-    .isPAL      = false,
+    .psexePath        = "SLUS_010.32",
+    .alltimPath       = "CHDAT/ALLTIM.TIM",
+    .nameOffset       = PSEXE_OFFSET(0x133b44),
+    .paraOffset       = PSEXE_OFFSET(0x12ceb4),
+    .skelOffset       = PSEXE_OFFSET(0x11ce60),
+    .mapEntryOffset   = PSEXE_OFFSET(0x1292d4),
+    .mapNamePtrOffset = PSEXE_OFFSET(0x1291bc),
+    .toiletDataOffset = PSEXE_OFFSET(0x122e10),
+    .doorDataOffset   = PSEXE_OFFSET(0x122e60),
+    .isPAL            = false,
 };
 
 constexpr VersionData SLPS_11_DATA = {
@@ -191,11 +202,11 @@ VersionData getVersion(std::filesystem::path parentPath)
     return SLUS_DATA;
 }
 
-std::vector<Entry> loadDigimonEntries(std::filesystem::path parentPath)
+std::vector<DigimonEntry> loadDigimonEntries(std::filesystem::path parentPath)
 {
     using DigimonFileName = char[8];
 
-    std::vector<Entry> digimonEntries;
+    std::vector<DigimonEntry> digimonEntries;
     VersionData version                 = getVersion(parentPath);
     std::vector<uint8_t> data           = readFileAsVector<uint8_t>(parentPath / version.psexePath);
     std::vector<MMDTexture> textureData = readFileAsVector<MMDTexture>(parentPath / version.alltimPath);
@@ -209,7 +220,7 @@ std::vector<Entry> loadDigimonEntries(std::filesystem::path parentPath)
         NodeEntry* skeletonOffset = reinterpret_cast<NodeEntry*>(data.data() + skelOffset[i] - 0x80090000);
         int32_t boneCount         = version.isPAL ? paraPAL[i].boneCount : para[i].boneCount;
 
-        Entry entry;
+        DigimonEntry entry;
         entry.filename = std::string(names[i]);
 
         for (int32_t j = 0; j < boneCount; j++)
@@ -222,41 +233,93 @@ std::vector<Entry> loadDigimonEntries(std::filesystem::path parentPath)
     return digimonEntries;
 }
 
-int main(int count, char* args[])
+std::array<MapEntry, 255> getMapEntries(std::filesystem::path parentPath)
 {
-    if (count < 2)
+    using MapName = char[28];
+
+    std::array<MapEntry, 255> entries;
+    VersionData version       = getVersion(parentPath);
+    std::vector<uint8_t> data = readFileAsVector<uint8_t>(version.psexePath);
+    MapEntryData* mapData     = reinterpret_cast<MapEntryData*>(data.data() + version.mapEntryOffset);
+    ToiletData* toiletData    = reinterpret_cast<ToiletData*>(data.data() + version.toiletDataOffset);
+    DoorData* doorData        = reinterpret_cast<DoorData*>(data.data() + version.doorDataOffset);
+    uint32_t* mapNamePtr      = reinterpret_cast<uint32_t*>(data.data() + version.mapNamePtrOffset);
+
+    for (auto i = 0; i < 255; i++)
     {
-        std::cout << "Usage: " << std::endl;
-        std::cout << "DW1ModelConverter <pathToExtractedFolder>" << std::endl;
-        std::cout << "Use tools like dumpsxiso to extract the ROM." << std::endl;
-        return EXIT_SUCCESS;
+        auto entryData = mapData[i];
+
+        entries[i].data = entryData;
+        if (entryData.toiletId != 0) entries[i].toilet = toiletData[entryData.toiletId - 1];
+        if (entryData.doorsId != 0) entries[i].doors = doorData[entryData.doorsId - 1];
+
+        std::string_view view =
+            *reinterpret_cast<MapName*>(data.data() + PSEXE_OFFSET(mapNamePtr[entryData.loadingNameId]));
+        view.remove_suffix(view.size() - view.find_last_not_of(' ') - 1);
+        view.remove_prefix(view.find_first_not_of(' '));
+        entries[i].name = view;
     }
 
-    std::filesystem::path dataPath = args[1];
-    std::vector<Entry> entries     = loadDigimonEntries(dataPath);
-    uint32_t id                    = 0;
+    return entries;
+}
 
-    if (entries.size() == 0)
+void exportMaps(std::filesystem::path dataPath, std::filesystem::path outputPath)
+{
+    auto entries = getMapEntries(dataPath);
+
+    for (auto i = 0; i < entries.size(); i++)
     {
-        std::cout << "No models found, is the path correct?" << std::endl;
-        return EXIT_SUCCESS;
-    }
+        auto& entry = entries[i];
+        auto name   = entry.data.name;
+        // entries are allowed to be empty, skip them
+        if (name[0] == 0) continue;
 
-    if (!std::filesystem::exists("output"))
-        if (!std::filesystem::create_directories("output"))
+        std::filesystem::path mapPath = dataPath / std::format("MAP/MAP{}/{}.MAP", 1 + (i / 15), name);
+        std::filesystem::path tfsPath = dataPath / std::format("MAP/MAP{}/{}.TFS", 1 + (i / 15), name);
+
+        // entries might reference files that don't exist in the final game, skip them
+        if (!std::filesystem::exists(mapPath)) continue;
+        if (!std::filesystem::exists(tfsPath)) continue;
+
+        std::filesystem::path outputDir = outputPath / "maps" / name;
+        std::filesystem::create_directories(outputDir);
+        MapFile map(mapPath, entry);
+        TFSFile tfs(tfsPath);
+
+        std::map<uint32_t, Model> doors;
+        if (entry.doors.has_value())
         {
-            std::cout << "Failed to create output folder. Make sure you have the necessary permissions." << std::endl;
-            return EXIT_FAILURE;
+            auto& door = entry.doors.value();
+            for (auto i = 0; i < 6; i++)
+            {
+                auto modelId = door.modelId[i];
+                if (modelId == 0xFF || doors.contains(modelId)) continue;
+
+                doors.emplace(modelId, dataPath / std::format("DOOR/DOOR{:02}.TMD", modelId));
+            }
         }
 
-    for (Entry& entry : entries)
-    {
-        std::stringstream mmdPath;
-        mmdPath << "CHDAT/MMD" << (id++ / 30) << "/" << entry.filename << ".MMD";
+        MAPExporter exporter(map, tfs, entry, doors);
 
-        // TODO: replace with std::format when GCC13 becomes available on Linux runners
-        // std::format("CHDAT/MMD{}/{}.MMD", id++ / 30, entry.filename)
-        std::filesystem::path modelPath = dataPath / mmdPath.str();
+        bool success = exporter.save(outputDir);
+        if (success)
+            std::cout << "Written " << name << std::endl;
+        else
+            std::cout << "Failed to write " << name << std::endl;
+    }
+}
+
+void exportModels(std::filesystem::path dataPath, std::filesystem::path outputPath)
+{
+    std::vector<DigimonEntry> entries = loadDigimonEntries(dataPath);
+    std::filesystem::create_directories(outputPath / "digimon");
+
+    if (entries.size() == 0) std::cout << "No models found, is the path correct?" << std::endl;
+
+    for (auto id = 0; id < entries.size(); id++)
+    {
+        DigimonEntry& entry                    = entries[id];
+        std::filesystem::path modelPath = dataPath / std::format("CHDAT/MMD{}/{}.MMD", id / 30, entry.filename);
 
         if (!std::filesystem::exists(modelPath))
         {
@@ -268,12 +331,7 @@ int main(int count, char* args[])
         AbstractTIM tim(entry.texture);
         GLTFExporter gltf(model, tim);
 
-        // TODO: replace with std::format when GCC13 becomes available on Linux runners
-        // std::format("output/{}.gltf", entry.filename)
-        std::stringstream outputPath;
-        outputPath << "output/" << entry.filename << ".gltf";
-
-        bool success = gltf.save(outputPath.str());
+        bool success = gltf.save(outputPath / std::format("digimon/{}.gltf", entry.filename));
         if (success)
             std::cout << "Written " << entry.filename << std::endl;
         else
@@ -282,5 +340,34 @@ int main(int count, char* args[])
 
     // TODO support for multiple images (that one arena)
     // TODO support for images being used by multiple models
+}
+
+// TODO command line switches for:
+// - what to export
+// - output folder
+int main(int count, char* args[])
+{
+    const std::filesystem::path output = "output";
+
+    if (count < 2)
+    {
+        std::cout << "Usage: " << std::endl;
+        std::cout << "DW1ModelConverter <pathToExtractedFolder>" << std::endl;
+        std::cout << "Use tools like dumpsxiso to extract the ROM." << std::endl;
+        return EXIT_SUCCESS;
+    }
+
+    std::filesystem::path dataPath = args[1];
+
+    if (!std::filesystem::exists(output))
+        if (!std::filesystem::create_directories(output))
+        {
+            std::cout << "Failed to create output folder. Make sure you have the necessary permissions." << std::endl;
+            return EXIT_FAILURE;
+        }
+
+    exportModels(dataPath, output);
+    exportMaps(dataPath, output);
+
     return EXIT_SUCCESS;
 }
