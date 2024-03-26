@@ -73,7 +73,7 @@ add_executable(DW1ModelConverter ${SOURCE_FILES})
 
 set_target_properties(DW1ModelConverter PROPERTIES CXX_STANDARD 20)
 target_include_directories(DW1ModelConverter PRIVATE ${cimg_SOURCE_DIR} ${libpng_SOURCE_DIR} ${libpng_BINARY_DIR} nlohmann_json::nlohmann_json)
-target_link_libraries(DW1ModelConverter PRIVATE png_static tinygltf)
+target_link_libraries(DW1ModelConverter PRIVATE png_static tinygltf nlohmann_json::nlohmann_json)
 
 target_compile_definitions(DW1ModelConverter PRIVATE cimg_display=0)
 target_compile_definitions(DW1ModelConverter PRIVATE cimg_use_png)
