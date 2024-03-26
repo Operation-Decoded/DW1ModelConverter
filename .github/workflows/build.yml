@@ -44,6 +44,9 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
+    env:
+      CC: gcc-13
+      CXX: g++-13
     steps:
       - name: Checkout
         uses: actions/checkout@v3
