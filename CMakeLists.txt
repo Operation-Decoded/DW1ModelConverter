@@ -63,6 +63,7 @@ CPMAddPackage(
 
 # re-enable deprecation warning
 set(CMAKE_WARN_DEPRECATED TRUE CACHE BOOL "" FORCE)
+set(JSON_MultipleHeaders FALSE CACHE BOOL "" FORCE)
 
 # --- Target ---
 set(SOURCE_FILES ${SOURCE_FILES} "src/main.cpp" "src/TIM.cpp" "src/Animation.cpp" "src/CLUTMap.cpp" 
