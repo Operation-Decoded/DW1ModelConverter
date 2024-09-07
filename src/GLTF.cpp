@@ -573,11 +573,11 @@ GLTFExporter::GLTFExporter(const Model& mmd, const AbstractTIM& tim, std::option
     buildTexture();
 }
 
-bool GLTFExporter::save(const std::string& filename)
+bool GLTFExporter::save(const std::filesystem::path& filename)
 {
     tinygltf::TinyGLTF gltf;
     return gltf.WriteGltfSceneToFile(&model,
-                                     filename,
+                                     filename.string(),
                                      true,   // embedImages
                                      true,   // embedBuffers
                                      true,   // pretty print

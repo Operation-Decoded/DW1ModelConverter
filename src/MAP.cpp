@@ -398,13 +398,13 @@ void MAPExporter::saveObject(MapObject& obj, TIMPalette& pal, std::filesystem::p
     if (image.has_value() && obj.width > 0 && obj.height > 0)
     {
         auto png = image.value()->getImage(pal, obj.uvX, obj.uvY, obj.width, obj.height, obj.transparency != 4);
-        png.save_png(path.c_str());
+        png.save_png(path.string().c_str());
     }
     else
     {
         std::cout << "Object with invalid image data detected.\n";
         cimg_library::CImg<uint8_t> png(std::max<uint16_t>(obj.width, 1), std::max<uint16_t>(obj.height, 1), 1, 4, 0);
-        png.save_png(path.c_str());
+        png.save_png(path.string().c_str());
     }
 }
 
@@ -425,7 +425,7 @@ bool MAPExporter::save(std::filesystem::path outputDir)
     // write background images
     auto images = tfs.getImages(map);
     for (auto i = 0; i < images.size(); i++)
-        images[i].save_png((outputDir / std::format("background_{}.png", i)).c_str());
+        images[i].save_png((outputDir / std::format("background_{}.png", i)).string().c_str());
 
     // write object images
     std::map<uint32_t, TIMPalette> clutMapping = getCLUTMap();

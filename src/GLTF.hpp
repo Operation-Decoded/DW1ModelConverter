@@ -74,5 +74,5 @@ private:
 public:
     GLTFExporter(const Model& model, const AbstractTIM& tim, std::optional<TIMPalette> forcedPalette = {});
 
-    bool save(const std::string& filename);
+    bool save(const std::filesystem::path& filename);
 };
