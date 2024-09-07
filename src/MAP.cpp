@@ -411,7 +411,16 @@ void MAPExporter::saveObject(MapObject& obj, TIMPalette& pal, std::filesystem::p
 bool MAPExporter::save(std::filesystem::path outputDir)
 {
     // write JSON
-    std::ofstream(outputDir / "map.json") << map.to_json().dump(2);
+    auto json = map.to_json();
+    for (int i = 0; i < 10; i++)
+    {
+        auto& val = json["elements"]["warp"][std::to_string(i)]["map"];
+        if (val < mapEntries.size())
+            val = mapEntries[val].data.name;
+        else
+            val = "";
+    }
+    std::ofstream(outputDir / "map.json") << json.dump(2);
 
     // write background images
     auto images = tfs.getImages(map);

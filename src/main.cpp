@@ -299,7 +299,7 @@ void exportMaps(std::filesystem::path dataPath, std::filesystem::path outputPath
             }
         }
 
-        MAPExporter exporter(map, tfs, entry, doors);
+        MAPExporter exporter(map, tfs, entry, doors, entries);
 
         bool success = exporter.save(outputDir);
         if (success)

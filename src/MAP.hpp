@@ -237,13 +237,15 @@ private:
     TFSFile tfs;
     MapEntry mapEntry;
     std::map<uint32_t, Model> doors;
+    std::array<MapEntry, 255> mapEntries;
 
 public:
-    MAPExporter(MapFile map, TFSFile tfs, MapEntry mapEntry, std::map<uint32_t, Model> doors)
+    MAPExporter(MapFile map, TFSFile tfs, MapEntry mapEntry, std::map<uint32_t, Model> doors, std::array<MapEntry, 255> mapEntries)
         : map(map)
         , tfs(tfs)
         , mapEntry(mapEntry)
         , doors(doors)
+        , mapEntries(mapEntries)
     {
     }
 
