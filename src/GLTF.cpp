@@ -8,6 +8,7 @@
 #include <format>
 #include <iostream>
 #include <numbers>
+#include <algorithm>
 
 bool hasValidNormals(const Mesh& mesh, const Face& face)
 {
@@ -210,7 +211,7 @@ std::size_t GLTFExporter::buildPrimitiveColor(std::vector<Face> faces)
         data.push_back(face.color3);
     }
 
-    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, TINYGLTF_TYPE_VEC3, TINYGLTF_TARGET_ARRAY_BUFFER);
+    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, TINYGLTF_TYPE_VEC3, TINYGLTF_TARGET_ARRAY_BUFFER, true);
 }
 
 std::size_t GLTFExporter::buildPrimitiveTexcoord(std::vector<Face> faces)
@@ -229,7 +230,8 @@ std::size_t GLTFExporter::buildPrimitiveTexcoord(std::vector<Face> faces)
 }
 
 template<typename T>
-std::size_t GLTFExporter::buildAccessor(std::vector<T> data, int componentType, int type, int target)
+std::size_t
+GLTFExporter::buildAccessor(std::vector<T> data, int componentType, int type, int target, bool normalized)
 {
     tinygltf::Buffer buffer;
     T min = data[0];
@@ -248,6 +250,8 @@ std::size_t GLTFExporter::buildAccessor(std::vector<T> data, int componentType, 
     tinygltf::BufferView view;
     view.buffer     = bufferId;
     view.byteLength = buffer.data.size();
+    if(target == TINYGLTF_TARGET_ARRAY_BUFFER)
+        view.byteStride = sizeof(T);
     view.byteOffset = 0;
     view.target     = target;
 
@@ -259,6 +263,7 @@ std::size_t GLTFExporter::buildAccessor(std::vector<T> data, int componentType, 
     accessor.componentType = componentType;
     accessor.count         = data.size();
     accessor.type          = type;
+    accessor.normalized    = normalized;
     push_to_vector(accessor.maxValues, max);
     push_to_vector(accessor.minValues, min);
 
@@ -387,10 +392,13 @@ int32_t GLTFExporter::buildMaterial(MaterialMode mode)
     {
         tinygltf::Value unlit;
         mat.extensions["KHR_materials_unlit"] = unlit;
+        const auto& extUsed                   = model.extensionsUsed;
+        if (std::find(extUsed.begin(), extUsed.end(), "KHR_materials_unlit") == extUsed.end())
+            model.extensionsUsed.push_back("KHR_materials_unlit");
     }
 
     mat.pbrMetallicRoughness.baseColorFactor = { 1.0f, 1.0f, 1.0f, 1.0f };
-    mat.pbrMetallicRoughness.metallicFactor = 0.0f;
+    mat.pbrMetallicRoughness.metallicFactor  = 0.0f;
     if (mode.type != MaterialType::COLOR) mat.pbrMetallicRoughness.baseColorTexture.index = 0;
     auto id               = push(model.materials, mat);
     materialMapping[mode] = id;
@@ -527,7 +535,7 @@ void GLTFExporter::buildAnimations()
         }
         if (!data.sound.empty()) extras.emplace("sounds", soundArray);
         if (!data.texture.empty()) extras.emplace("textures", textureArray);
-        anim.extras = tinygltf::Value(extras);
+        if (!extras.empty()) anim.extras = tinygltf::Value(extras);
         push(model.animations, anim);
     }
 }

@@ -10,6 +10,7 @@ struct ColorRGB
     uint8_t r;
     uint8_t g;
     uint8_t b;
+    uint8_t unused;
 
     ColorRGB() = default;
     ColorRGB(Color color)
@@ -62,7 +63,7 @@ private:
     void buildAnimations();
     void buildTexture();
 
-    template<typename T> std::size_t buildAccessor(std::vector<T> data, int componentType, int type, int target);
+    template<typename T> std::size_t buildAccessor(std::vector<T> data, int componentType, int type, int target, bool normalized = false);
 
     int32_t buildMaterial(MaterialMode mode);
     tinygltf::Primitive buildPrimitive(const Mesh& mesh, MaterialMode material, std::vector<Face> faces);
