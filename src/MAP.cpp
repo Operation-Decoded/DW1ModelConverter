@@ -298,11 +298,15 @@ nlohmann::ordered_json MapFile::to_json()
     {
         for (auto i = 0; i < 6; i++)
         {
-            json["door"][i]["model_id"] = entry.doors->modelId[i];
-            json["door"][i]["x"]        = entry.doors->posX[i];
-            json["door"][i]["y"]        = entry.doors->posY[i];
-            json["door"][i]["z"]        = entry.doors->posZ[i];
-            json["door"][i]["rotation"] = entry.doors->rotation[i];
+            // ignore empty entires
+            if(entry.doors->modelId[i] == 255)
+                continue;
+            json["door"][i]["model_id"]       = entry.doors->modelId[i];
+            json["door"][i]["position"]["x"]  = entry.doors->posX[i];
+            json["door"][i]["position"]["y"]  = entry.doors->posY[i];
+            json["door"][i]["position"]["z"]  = entry.doors->posZ[i];
+            json["door"][i]["rotation"]       = entry.doors->rotation[i];
+            json["door"][i]["is_double_door"] = entry.doors->modelId[i] == 10;
         }
     }
 
