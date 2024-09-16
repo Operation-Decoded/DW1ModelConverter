@@ -5,10 +5,10 @@
 
 #include "GLTF.hpp"
 
+#include <algorithm>
 #include <format>
 #include <iostream>
 #include <numbers>
-#include <algorithm>
 
 bool hasValidNormals(const Mesh& mesh, const Face& face)
 {
@@ -156,10 +156,24 @@ template<> TexCoord myMax(TexCoord& a, TexCoord& b)
     return out;
 }
 
-void GLTFExporter::buildAssetEntry()
+std::string to_string(ModelType type)
 {
+    switch (type)
+    {
+        case ModelType::DIGIMON: return "digimon";
+        case ModelType::DOOR: return "door";
+        default: return "undefined";
+    }
+}
+
+void GLTFExporter::buildAssetEntry(ModelType type)
+{
+    tinygltf::Value::Object extras;
+    extras.emplace("model_type", to_string(type));
+
     model.asset.version   = "2.0";
     model.asset.generator = std::format("{} v{}", PROJECT_NAME, PROJECT_VERSION);
+    model.asset.extras    = tinygltf::Value(extras);
 }
 
 std::size_t GLTFExporter::buildPrimitiveVertex(const Mesh& mesh, std::vector<Face> faces)
@@ -211,7 +225,11 @@ std::size_t GLTFExporter::buildPrimitiveColor(std::vector<Face> faces)
         data.push_back(face.color3);
     }
 
-    return buildAccessor(data, TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, TINYGLTF_TYPE_VEC3, TINYGLTF_TARGET_ARRAY_BUFFER, true);
+    return buildAccessor(data,
+                         TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE,
+                         TINYGLTF_TYPE_VEC3,
+                         TINYGLTF_TARGET_ARRAY_BUFFER,
+                         true);
 }
 
 std::size_t GLTFExporter::buildPrimitiveTexcoord(std::vector<Face> faces)
@@ -230,8 +248,7 @@ std::size_t GLTFExporter::buildPrimitiveTexcoord(std::vector<Face> faces)
 }
 
 template<typename T>
-std::size_t
-GLTFExporter::buildAccessor(std::vector<T> data, int componentType, int type, int target, bool normalized)
+std::size_t GLTFExporter::buildAccessor(std::vector<T> data, int componentType, int type, int target, bool normalized)
 {
     tinygltf::Buffer buffer;
     T min = data[0];
@@ -250,8 +267,7 @@ GLTFExporter::buildAccessor(std::vector<T> data, int componentType, int type, in
     tinygltf::BufferView view;
     view.buffer     = bufferId;
     view.byteLength = buffer.data.size();
-    if(target == TINYGLTF_TARGET_ARRAY_BUFFER)
-        view.byteStride = sizeof(T);
+    if (target == TINYGLTF_TARGET_ARRAY_BUFFER) view.byteStride = sizeof(T);
     view.byteOffset = 0;
     view.target     = target;
 
@@ -570,12 +586,15 @@ void GLTFExporter::buildTexture()
     push(model.textures, tex);
 }
 
-GLTFExporter::GLTFExporter(const Model& mmd, const AbstractTIM& tim, std::optional<TIMPalette> forcedPalette)
+GLTFExporter::GLTFExporter(const Model& mmd,
+                           const AbstractTIM& tim,
+                           ModelType type,
+                           std::optional<TIMPalette> forcedPalette)
     : mmd(mmd)
     , tim(tim)
     , forcedPalette(forcedPalette)
 {
-    buildAssetEntry();
+    buildAssetEntry(type);
     buildMeshEntries();
     buildAnimations();
     buildTexture();

@@ -45,6 +45,11 @@ public:
     }
 };
 
+enum class ModelType {
+    DIGIMON,
+    DOOR,
+};
+
 class GLTFExporter
 {
 private:
@@ -56,7 +61,7 @@ private:
     std::optional<TIMPalette> forcedPalette;
 
 private:
-    void buildAssetEntry();
+    void buildAssetEntry(ModelType type);
     void buildMeshEntries();
     void buildStaticScene();
     void buildSkeletonScene();
@@ -73,7 +78,7 @@ private:
     std::size_t buildPrimitiveTexcoord(std::vector<Face> faces);
 
 public:
-    GLTFExporter(const Model& model, const AbstractTIM& tim, std::optional<TIMPalette> forcedPalette = {});
+    GLTFExporter(const Model& model, const AbstractTIM& tim, ModelType type = ModelType::DIGIMON, std::optional<TIMPalette> forcedPalette = {});
 
     bool save(const std::filesystem::path& filename);
 };

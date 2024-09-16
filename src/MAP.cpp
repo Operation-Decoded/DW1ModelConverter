@@ -468,7 +468,7 @@ bool MAPExporter::save(std::filesystem::path outputDir)
         auto pal   = clutMapping[model.getClutY()];
         pal        = TIMPalette(pal.begin() + model.getClutX(), pal.end());
 
-        GLTFExporter exporter(model, **image, pal);
+        GLTFExporter exporter(model, **image, ModelType::DOOR, pal);
         exporter.save(outputDir / std::format("door_{}.gltf", id));
     }
 
