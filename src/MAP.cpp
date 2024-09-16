@@ -298,9 +298,6 @@ nlohmann::ordered_json MapFile::to_json()
     {
         for (auto i = 0; i < 6; i++)
         {
-            // ignore empty entires
-            if(entry.doors->modelId[i] == 255)
-                continue;
             json["door"][i]["model_id"]       = entry.doors->modelId[i];
             json["door"][i]["position"]["x"]  = entry.doors->posX[i];
             json["door"][i]["position"]["y"]  = entry.doors->posY[i];
