@@ -172,7 +172,7 @@ void GLTFExporter::buildAssetEntry(ModelType type)
     extras.emplace("model_type", to_string(type));
 
     model.asset.version   = "2.0";
-    model.asset.generator = std::format("{} v{}", PROJECT_NAME, PROJECT_VERSION);
+    model.asset.generator = std::format("{} {}", PROJECT_NAME, PROJECT_VERSION);
     model.asset.extras    = tinygltf::Value(extras);
 }
 
