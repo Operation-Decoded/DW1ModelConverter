@@ -67,7 +67,7 @@ set(CMAKE_WARN_DEPRECATED TRUE CACHE BOOL "" FORCE)
 
 # --- Target ---
 set(SOURCE_FILES ${SOURCE_FILES} "src/main.cpp" "src/TIM.cpp" "src/Animation.cpp" "src/CLUTMap.cpp" 
-                                 "src/Model.cpp" "src/GLTF.cpp" "src/MAP.cpp")
+                                 "src/Model.cpp" "src/GLTF.cpp" "src/MAP.cpp" "src/GameData.cpp")
 
 add_executable(DW1ModelConverter ${SOURCE_FILES})
 

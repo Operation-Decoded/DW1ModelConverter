@@ -197,9 +197,9 @@ void to_json(nlohmann::ordered_json& json, const MapDigimon& elements)
     json["ai"]["tracking_range"]      = elements.trackingRange;
     json["ai"]["ai_mod"]              = elements.chargeMode;
     json["location"]["position"]      = elements.pos;
-    json["location"]["rotation"]["X"] = elements.rotX;
-    json["location"]["rotation"]["Y"] = elements.rotY;
-    json["location"]["rotation"]["Z"] = elements.rotZ;
+    json["location"]["rotation"]["x"] = elements.rotX;
+    json["location"]["rotation"]["y"] = elements.rotY;
+    json["location"]["rotation"]["z"] = elements.rotZ;
     json["stats"]["hp"]               = elements.hp;
     json["stats"]["mp"]               = elements.mp;
     json["stats"]["hp_max"]           = elements.maxHP;
@@ -418,6 +418,14 @@ bool MAPExporter::save(std::filesystem::path outputDir)
         auto& val = json["elements"]["warp"][std::to_string(i)]["map"];
         if (val < mapEntries.size())
             val = mapEntries[val].data.name;
+        else
+            val = "";
+    }
+    for (auto& itr : json["elements"]["digimon"])
+    {
+        auto& val = itr["type"];
+        if(val < digimonEntries.size())
+            val = digimonEntries[val].filename;
         else
             val = "";
     }

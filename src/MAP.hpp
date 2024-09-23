@@ -1,3 +1,5 @@
+#pragma once
+#include "GameData.hpp"
 #include "TIM.hpp"
 #include "utils/ReadBuffer.hpp"
 
@@ -8,53 +10,6 @@
 #include <optional>
 #include <vector>
 
-struct ToiletData
-{
-    int16_t x1;
-    int16_t y1;
-    int16_t x2;
-    int16_t y2;
-};
-
-struct MapEntryFlags
-{
-    uint8_t soundId     : 5;
-    uint8_t             : 1; // padding
-    bool hasNoTimeCycle : 1;
-    bool hasDigimon     : 1;
-};
-
-static_assert(sizeof(MapEntryFlags) == 1);
-
-struct MapEntryData
-{
-    char name[10];
-    uint8_t numMapImages;
-    uint8_t numMapObjects;
-    MapEntryFlags flags;
-    uint8_t doorsId;
-    uint8_t toiletId;
-    uint8_t loadingNameId;
-};
-
-struct DoorData
-{
-    uint8_t modelId[6];
-    int16_t posX[6];
-    int16_t posY[6];
-    int16_t posZ[6];
-    int16_t rotation[6];
-};
-
-struct MapEntry
-{
-    MapEntryData data;
-    std::string name;
-    std::optional<ToiletData> toilet;
-    std::optional<DoorData> doors;
-};
-
-static_assert(sizeof(MapEntryData) == 0x10);
 
 template<typename T> struct Position3D
 {
@@ -238,14 +193,21 @@ private:
     MapEntry mapEntry;
     std::map<uint32_t, Model> doors;
     std::array<MapEntry, 255> mapEntries;
+    std::vector<DigimonEntry> digimonEntries;
 
 public:
-    MAPExporter(MapFile map, TFSFile tfs, MapEntry mapEntry, std::map<uint32_t, Model> doors, std::array<MapEntry, 255> mapEntries)
+    MAPExporter(MapFile map,
+                TFSFile tfs,
+                MapEntry mapEntry,
+                std::map<uint32_t, Model> doors,
+                std::array<MapEntry, 255> mapEntries,
+                std::vector<DigimonEntry> digimonEntries)
         : map(map)
         , tfs(tfs)
         , mapEntry(mapEntry)
         , doors(doors)
         , mapEntries(mapEntries)
+        , digimonEntries(digimonEntries)
     {
     }
 
