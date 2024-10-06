@@ -112,7 +112,7 @@ int main(int count, char* args[])
             return EXIT_FAILURE;
         }
 
-    // exportModels(dataPath, output);
+    exportModels(dataPath, output);
     exportMaps(dataPath, output);
 
     return EXIT_SUCCESS;
