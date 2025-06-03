@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -19,7 +19,7 @@ jobs:
           vsversion: 2022
 
       - name: Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/_deps
           key: CPM Dependencies Win x64
@@ -33,7 +33,7 @@ jobs:
         run: copy ${{ github.workspace }}/Release/DW1ModelConverter.exe ${{ github.workspace }}/DW1ModelConverter.exe
 
       - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: win-x64
           path: | 
@@ -46,10 +46,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/_deps
           key: CPM Dependencies Linux x64
@@ -60,7 +60,7 @@ jobs:
           cmake --build . --config Release
 
       - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-x64
           path: |
