@@ -33,7 +33,9 @@ CPMAddPackage(
 set(ZLIB_LIBRARIES zlibstatic zlib)
 set(ZLIB_INCLUDE_DIRS ${zlib_SOURCE_DIR} ${zlib_BINARY_DIR})
 add_library(ZLIB::ZLIB ALIAS zlibstatic)
-target_include_directories(zlibstatic INTERFACE ${zlib_BINARY_DIR} ${zlib_SOURCE_DIR})
+if (WIN32)
+  target_include_directories(zlibstatic INTERFACE ${zlib_BINARY_DIR} ${zlib_SOURCE_DIR})
+endif()
 
 # libpng
 set(PNG_TESTS OFF)
