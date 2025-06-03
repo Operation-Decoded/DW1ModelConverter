@@ -21,6 +21,7 @@ CPMAddPackage(
 
 # zlib
 set(SKIP_INSTALL_ALL ON)
+set(ZLIB_BUILD_EXAMPLES OFF)
 
 CPMAddPackage(
   NAME zlib
@@ -29,12 +30,14 @@ CPMAddPackage(
 )
 
 # pass zlib information to libpng
-set(ZLIB_LIBRARIES zlibstatic)
+set(ZLIB_LIBRARIES zlibstatic zlib)
 set(ZLIB_INCLUDE_DIRS ${zlib_SOURCE_DIR} ${zlib_BINARY_DIR})
+add_library(ZLIB::ZLIB ALIAS zlibstatic)
 
 # libpng
 set(PNG_TESTS OFF)
 set(PNG_EXECUTABLES OFF)
+set(PNG_TOOLS OFF)
 set(PNG_SHARED OFF)
 set(PNG_FRAMEWORK OFF)
 
