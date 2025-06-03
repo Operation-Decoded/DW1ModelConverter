@@ -64,7 +64,7 @@ struct KeyframeEntry
 
 class KeyframeInstruction : public Instruction
 {
-uint32_t timecode;
+    uint32_t timecode;
     std::vector<KeyframeEntry> entries;
 
 public:

@@ -71,7 +71,7 @@ std::array<MapEntry, 255> getMapEntries(std::filesystem::path parentPath)
 
     std::array<MapEntry, 255> entries;
     VersionData version       = getVersion(parentPath);
-    std::vector<uint8_t> data = readFileAsVector<uint8_t>(version.psexePath);
+    std::vector<uint8_t> data = readFileAsVector<uint8_t>(parentPath / version.psexePath);
     MapEntryData* mapData     = reinterpret_cast<MapEntryData*>(data.data() + version.mapEntryOffset);
     ToiletData* toiletData    = reinterpret_cast<ToiletData*>(data.data() + version.toiletDataOffset);
     DoorData* doorData        = reinterpret_cast<DoorData*>(data.data() + version.doorDataOffset);
