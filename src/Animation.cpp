@@ -121,10 +121,13 @@ bool LoopEndInstruction::run(Animation& anim)
         return true;
     }
 
-    anim.mtnFrame = newTime;
     anim.loopCount--;
 
-    if (anim.loopCount != 0) anim.currentIndex = anim.jumpbackIndex;
+    if (anim.loopCount != 0)
+    {
+        anim.mtnFrame     = newTime;
+        anim.currentIndex = anim.jumpbackIndex;
+    }
 
     return true;
 }
