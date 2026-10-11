@@ -16,16 +16,20 @@ CLUTMap::CLUTMapImage& CLUTMap::operator[](uint32_t id) { return at(id); }
 
 void CLUTMap::updateBlocks()
 {
+    constexpr auto dimension  = 256;
+    constexpr auto blockSize  = 4;
+    constexpr auto blockCount = dimension / blockSize;
+
     for (auto& image : texturePages)
-        for (int32_t blockX = 0; blockX < 32; blockX++)
-            for (int32_t blockY = 0; blockY < 32; blockY++)
+        for (int32_t blockX = 0; blockX < blockCount; blockX++)
+            for (int32_t blockY = 0; blockY < blockCount; blockY++)
             {
                 std::map<uint32_t, uint32_t> count;
 
-                for (uint32_t x = 0; x < 8; x++)
-                    for (uint32_t y = 0; y < 8; y++)
+                for (uint32_t x = 0; x < blockSize; x++)
+                    for (uint32_t y = 0; y < blockSize; y++)
                     {
-                        auto value = image.second(blockX * 8 + x, blockY * 8 + y);
+                        auto value = image.second(blockX * blockSize + x, blockY * blockSize + y);
                         if (value != 0xFFFFFFFF) count[value]++;
                     }
 
@@ -33,8 +37,14 @@ void CLUTMap::updateBlocks()
                 for (std::pair<uint32_t, uint32_t> entry : count)
                     if (entry.second > bestEntry.second) bestEntry = entry;
 
-                image.second
-                    .draw_rectangle(blockX * 8, blockY * 8, blockX * 8 + 7, blockY * 8 + 7, &bestEntry.first, 1.0f);
+                if (bestEntry.first == 0xFFFFFFFF) continue;
+                // only fill texels that no face covers: covered texels keep their own palette
+                for (uint32_t x = 0; x < blockSize; x++)
+                    for (uint32_t y = 0; y < blockSize; y++)
+                    {
+                        auto& texel = image.second(blockX * blockSize + x, blockY * blockSize + y);
+                        if (texel == 0xFFFFFFFF) texel = bestEntry.first;
+                    }
             }
 }
 
