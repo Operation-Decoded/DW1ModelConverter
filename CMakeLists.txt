@@ -25,7 +25,7 @@ set(ZLIB_BUILD_EXAMPLES OFF)
 
 CPMAddPackage(
   NAME zlib
-  VERSION 1.3
+  VERSION 1.3.2
   GITHUB_REPOSITORY "madler/zlib"
 )
 
@@ -46,7 +46,7 @@ set(PNG_FRAMEWORK OFF)
 
 CPMAddPackage(
   NAME libpng
-  VERSION 1.6.48
+  VERSION 1.6.59
   GITHUB_REPOSITORY "glennrp/libpng"
 )
 
